@@ -23,12 +23,14 @@ async def get_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(select(User).where(User.email == email))
     return result.scalar_one_or_none()
 
+
 async def get_by_oauth(db: AsyncSession, provider: str, oauth_id: str) -> User | None:
     """Get user by OAuth provider and ID."""
     result = await db.execute(
         select(User).where(User.oauth_provider == provider, User.oauth_id == oauth_id)
     )
     return result.scalar_one_or_none()
+
 
 async def get_multi(
     db: AsyncSession,
@@ -54,8 +56,10 @@ async def create(
     full_name: str | None = None,
     is_active: bool = True,
     role: str = "user",
-    is_app_admin: bool = False,    oauth_provider: str | None = None,
-    oauth_id: str | None = None,) -> User:
+    is_app_admin: bool = False,
+    oauth_provider: str | None = None,
+    oauth_id: str | None = None,
+) -> User:
     """Create a new user.
 
     Note: Password should already be hashed by the service layer.
@@ -66,8 +70,10 @@ async def create(
         full_name=full_name,
         is_active=is_active,
         role=role,
-        is_app_admin=is_app_admin,        oauth_provider=oauth_provider,
-        oauth_id=oauth_id,    )
+        is_app_admin=is_app_admin,
+        oauth_provider=oauth_provider,
+        oauth_id=oauth_id,
+    )
     db.add(user)
     await db.flush()
     await db.refresh(user)

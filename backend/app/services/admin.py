@@ -8,10 +8,12 @@ COUNT(*) per metric); if usage grows we'd promote to materialized views.
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
 from typing import Any
+
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSessionfrom app.db.models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -30,67 +32,16 @@ class AdminService:
 
         # Active in last 24h via session.last_used_at — best-effort, returns 0
         # when session_management isn't enabled in this deployment.
-        cutoff = datetime.now(UTC) - timedelta(hours=24)
         active_24h: int = 0
-        try:
-        
-from app.db.models.session import Session as UserSession
+        # Session/billing tables are optional in this deployment.
 
-            active_24h = int(
-                (
-                    await self.db.execute(
-                        select(func.count(func.distinct(UserSession.user_id))).where(
-                            UserSession.last_used_at >= cutoff
-                        )
-                    )
-                ).scalar_one()
-            )
-        except Exception:  # noqa: BLE001
-            logger.exception("admin_stats_active_users_query_failed")
-
-        # Conversations + messages totals — 0 when AI/chat is disabled        total_conversations = 0
+        # Conversations + messages totals — 0 when AI/chat is disabled
+        total_conversations = 0
         total_messages = 0
         # Billing — best-effort, only if tables exist + billing on
         credits_30d = 0
         mrr_cents = 0
-        try:
-        
-from app.db.models.credit_transaction import CreditTransaction
-
-            since = datetime.now(UTC) - timedelta(days=30)
-            credits_30d_raw = (
-                await self.db.execute(
-                    select(func.coalesce(func.sum(-CreditTransaction.delta), 0)).where(
-                        CreditTransaction.created_at >= since,
-                        CreditTransaction.delta < 0,
-                    )
-                )
-            ).scalar_one()
-            credits_30d = int(credits_30d_raw)
-        except Exception:  # noqa: BLE001
-            logger.exception("admin_stats_credits_query_failed")
-
-        try:
-        
-from app.db.models.subscription import Subscription
-        
-from app.db.models.plan import Price
-
-            # Sum active subscription unit_amount * quantity, monthly equiv.
-            stmt = (
-                select(
-                    func.coalesce(
-                        func.sum(Price.amount_cents * Subscription.seats_quantity), 0
-                    )
-                )
-                .select_from(Subscription)
-                .join(Price, Price.id == Subscription.price_id)
-                .where(Subscription.status.in_(("active", "trialing")))
-                .where(Price.interval == "month")
-            )
-            mrr_cents = int((await self.db.execute(stmt)).scalar_one() or 0)
-        except Exception:  # noqa: BLE001
-            logger.exception("admin_stats_mrr_query_failed")
+        # Billing tables are not part of the base schema.
 
         return {
             "total_users": int(total_users),
@@ -101,28 +52,10 @@ from app.db.models.plan import Price
             "mrr_cents": mrr_cents,
         }
 
-    async def list_stripe_events(
-        self, *, skip: int = 0, limit: int = 50
-    ) -> tuple[list[Any], int]:
+    async def list_stripe_events(self, *, skip: int = 0, limit: int = 50) -> tuple[list[Any], int]:
         """Page through the Stripe webhook idempotency log.
 
         Returns ([], 0) when the StripeEvent table doesn't exist (billing
         disabled in this deployment). Caller projects to schema.
         """
-        try:
-        
-from app.db.models.stripe_event import StripeEvent
-        except Exception:  # noqa: BLE001
-            logger.exception("admin_stats_stripe_event_import_failed")
-            return [], 0
-
-        total = (await self.db.execute(select(func.count(StripeEvent.id)))).scalar_one()
-        rows = (
-            await self.db.execute(
-                select(StripeEvent)
-                .order_by(StripeEvent.created_at.desc())
-                .offset(skip)
-                .limit(limit)
-            )
-        ).scalars().all()
-        return list(rows), int(total)
+        return [], 0

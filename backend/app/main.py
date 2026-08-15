@@ -2,17 +2,28 @@
 
 import logging
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanagerfrom typing import TypedDict
+from contextlib import asynccontextmanager
+from typing import TypedDict
+
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPIfrom fastapi_pagination import add_pagination
+from fastapi import FastAPI
+from fastapi_pagination import add_pagination
+
 from app.api.exception_handlers import register_exception_handlers
 from app.api.router import api_router
-from app.core.config import settingsfrom app.core.logfire_setup import instrument_app, setup_logfirefrom app.core.logging import setup_logging
-from app.core.middleware import RequestIDMiddlewarefrom app.clients.redis import RedisClient
+from app.clients.redis import RedisClient
+from app.core.config import settings
+from app.core.logfire_setup import instrument_app, setup_logfire
+from app.core.logging import setup_logging
+from app.core.middleware import RequestIDMiddleware
+
 
 class LifespanState(TypedDict, total=False):
-    """Lifespan state - resources available via request.state."""    redis: RedisClient
+    """Lifespan state - resources available via request.state."""
+
+    redis: RedisClient
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
@@ -21,17 +32,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
     Resources yielded here are available via request.state in route handlers.
     See: https://asgi.readthedocs.io/en/latest/specs/lifespan.html#lifespan-state
     """
-    # === Startup ===    state: LifespanState = {}    setup_logfire()
-from app.core.logfire_setup import instrument_asyncpg
+    state: LifespanState = {}
+    setup_logfire()
+    from app.core.logfire_setup import instrument_asyncpg
+
     instrument_asyncpg()
-from app.core.logfire_setup import instrument_pydantic_ai
-    instrument_pydantic_ai()    redis_client = RedisClient()
+    from app.core.logfire_setup import instrument_pydantic_ai
+
+    instrument_pydantic_ai()
+    redis_client = RedisClient()
     await redis_client.connect()
-    state["redis"] = redis_client    yield state
-    # === Shutdown ===    if "redis" in state:
+    state["redis"] = redis_client
+    yield state
+    if "redis" in state:
         await state["redis"].close()
-from app.db.session import close_db
+    from app.db.session import close_db
+
     await close_db()
+
 
 # Environments where API docs should be visible
 SHOW_DOCS_ENVIRONMENTS = ("local", "staging", "development")
@@ -50,17 +68,20 @@ def create_app() -> FastAPI:
         {
             "name": "health",
             "description": "Health check endpoints for monitoring and Kubernetes probes",
-        },        {
+        },
+        {
             "name": "auth",
             "description": "Authentication endpoints - login, register, token refresh",
         },
         {
             "name": "users",
             "description": "User management endpoints",
-        },        {
+        },
+        {
             "name": "oauth",
             "description": "OAuth2 social login endpoints (Google, etc.)",
-        },    ]
+        },
+    ]
 
     # PII redaction in logs (GDPR/compliance)
     setup_logging()
@@ -91,7 +112,8 @@ A FastAPI project
             "identifier": "MIT",
         },
         lifespan=lifespan,
-    )    # Logfire instrumentation. setup_logfire() is also called from the lifespan
+    )
+    # Logfire instrumentation. setup_logfire() is also called from the lifespan
     # for the runtime app, but we call it here too so that import-time test
     # clients (which never run lifespan) silence the "configure first" warning.
     setup_logfire()
@@ -103,6 +125,7 @@ A FastAPI project
     register_exception_handlers(app)
     # CORS middleware
     from starlette.middleware.cors import CORSMiddleware
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -112,6 +135,7 @@ A FastAPI project
     )
     # Session middleware (for admin authentication and/or OAuth)
     from starlette.middleware.sessions import SessionMiddleware
+
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
     # API Version Deprecation (uncomment when deprecating old versions)
     # Example: Mark v1 as deprecated when v2 is ready

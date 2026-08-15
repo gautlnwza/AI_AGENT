@@ -1,5 +1,22 @@
 {
-  "common": {
-    "welcome": "Witaj"
+  "common": { "welcome": "Witaj" },
+  "marketing": {
+    "nav": {
+      "platform": "Platforma", "solutions": "Rozwiązania", "pricing": "Cennik", "resources": "Materiały",
+      "features": "Funkcje", "changelog": "Zmiany", "getStarted": "Zacznij", "signIn": "Zaloguj się"
+    },
+    "footer": { "product": "Produkt", "resources": "Materiały", "apiDocs": "Dokumentacja API", "tagline": "Asystent AI, który zna Twoją pracę.", "operational": "Wszystkie systemy działają" },
+    "landing": {
+      "metaDescription": "Asystent AI dla nowoczesnych zespołów.",
+      "hero": { "eyebrow": "AI dla zespołu", "titlePre": "Twoja praca,", "titleHighlight": "zrozumiana.", "titleEm": "wreszcie.", "description": "Zadawaj pytania, znajduj odpowiedzi i rozwijaj pracę z asystentem, który zna Twój biznes.", "ctaPrimary": "Zacznij", "stat_teams": "zespołów", "stat_speed": "szybsze odpowiedzi", "stat_uptime": "dostępność" },
+      "faq": { "eyebrow": "FAQ", "title": "Najczęstsze pytania", "items": [
+        { "q": "Czym jest my_project?", "a": "my_project to asystent AI pomagający zespołom znajdować i wykorzystywać wiedzę." },
+        { "q": "Czy mogę wypróbować usługę za darmo?", "a": "Tak. Utwórz konto, aby rozpocząć." },
+        { "q": "Czy moje dane są bezpieczne?", "a": "Twoje dane są chronione kontrolą dostępu i bezpiecznymi połączeniami." }
+      ] },
+      "pricing": { "eyebrow": "Cennik", "subtitle": "Plany dla rozwijających się zespołów.", "titlePre": "Prosty cennik.", "titleEm": "Prawdziwa wartość.", "perMonth": "miesięcznie", "billedMonthly": "Rozliczenie miesięczne", "seats": "miejsc", "seatsUnit": "miejsce", "seeFull": "Zobacz pełny cennik" },
+      "testimonials": { "eyebrow": "Historie klientów", "titlePre": "Uwielbiany przez zespoły", "titleEm": "wykonujące świetną pracę." },
+      "finalCta": { "titlePre": "Gotowy, by", "titleEm": "pracować mądrzej?", "description": "Połącz wiedzę zespołu i osiągaj więcej.", "primary": "Zacznij", "secondary": "Skontaktuj się", "statLabel": "zespołów korzysta już z my_project", "statValue": "10k+" }
+    }
   }
 }

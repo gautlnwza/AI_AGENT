@@ -1,5 +1,26 @@
 {
-  "common": {
-    "welcome": "Welcome"
+  "common": { "welcome": "Welcome" },
+  "marketing": {
+    "nav": {
+      "platform": "Platform", "solutions": "Solutions", "pricing": "Pricing", "resources": "Resources",
+      "features": "Features", "changelog": "Changelog", "getStarted": "Get started", "signIn": "Sign in"
+    },
+    "footer": { "product": "Product", "resources": "Resources", "apiDocs": "API docs", "tagline": "The AI assistant that knows your work.", "operational": "All systems operational" },
+    "landing": {
+      "metaDescription": "An AI assistant for modern teams.",
+      "hero": {
+        "eyebrow": "AI for your team", "titlePre": "Your work,", "titleHighlight": "understood.", "titleEm": "finally.",
+        "description": "Ask questions, find answers, and move work forward with an assistant that knows your business.",
+        "ctaPrimary": "Get started", "stat_teams": "teams", "stat_speed": "faster answers", "stat_uptime": "available"
+      },
+      "faq": { "eyebrow": "FAQ", "title": "Frequently asked questions", "items": [
+        { "q": "What is my_project?", "a": "my_project is an AI assistant that helps teams find and use their work knowledge." },
+        { "q": "Can I try it for free?", "a": "Yes. Create an account to get started." },
+        { "q": "Is my data secure?", "a": "Your data is protected with access controls and secure connections." }
+      ] },
+      "pricing": { "eyebrow": "Pricing", "subtitle": "Plans that grow with your team.", "titlePre": "Simple pricing.", "titleEm": "Real value.", "perMonth": "per month", "billedMonthly": "Billed monthly", "seats": "seats", "seatsUnit": "seat", "seeFull": "See full pricing" },
+      "testimonials": { "eyebrow": "Customer stories", "titlePre": "Loved by teams", "titleEm": "doing their best work." },
+      "finalCta": { "titlePre": "Ready to", "titleEm": "work smarter?", "description": "Bring your team's knowledge together and get more done.", "primary": "Get started", "secondary": "Contact sales", "statLabel": "teams already using my_project", "statValue": "10k+" }
+    }
   }
 }

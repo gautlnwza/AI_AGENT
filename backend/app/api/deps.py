@@ -1,21 +1,18 @@
 """API dependencies.
 
 Dependency injection factories for services, repositories, and authentication.
-"""# ruff: noqa: I001, E402 - Imports structured for Jinja2 template conditionals
+"""  # ruff: noqa: I001, E402 - Imports structured for Jinja2 template conditionals
+
 from typing import Annotated
 
-from fastapi import Dependsfrom 
-fastapi.security 
-import OAuth2PasswordBearer
-from app.core.config import settingsfrom 
-app.db.session 
-import get_db_sessionfrom 
-sqlalchemy.ext.asyncio 
-import AsyncSession
+from fastapi import Cookie, Depends, Request, WebSocket
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
+from app.db.session import get_db_session
 
 DBSession = Annotated[AsyncSession, Depends(get_db_session)]
-from fastapi import Request
-
 from app.clients.redis import RedisClient
 
 
@@ -30,9 +27,11 @@ Redis = Annotated[RedisClient, Depends(get_redis)]
 
 from app.services.user import UserService
 
+
 def get_user_service(db: DBSession) -> UserService:
     """Create UserService instance with database session."""
     return UserService(db)
+
 
 UserSvc = Annotated[UserService, Depends(get_user_service)]
 from app.services.file_upload import FileUploadService
@@ -43,12 +42,16 @@ def get_file_upload_service(db: DBSession) -> FileUploadService:
     return FileUploadService(db)
 
 
-FileUploadSvc = Annotated[FileUploadService, Depends(get_file_upload_service)]# === Authentication Dependencies ===
+FileUploadSvc = Annotated[
+    FileUploadService, Depends(get_file_upload_service)
+]  # === Authentication Dependencies ===
 
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.db.models.user import User, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     user_service: UserSvc,
@@ -81,6 +84,7 @@ async def get_current_user(
         raise AuthenticationError(message="User account is disabled")
 
     return user
+
 
 class RoleChecker:
     """Dependency class for role-based access control.
@@ -132,10 +136,12 @@ async def get_current_active_superuser(
         raise AuthorizationError(message="Admin privileges required")
     return current_user
 
+
 # Type aliases for dependency injection
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentSuperuser = Annotated[User, Depends(get_current_active_superuser)]
 CurrentAdmin = Annotated[User, Depends(RoleChecker(UserRole.ADMIN))]
+
 
 # is_app_admin is a global flag on the User model — independent of team
 # membership. Routes guarded by this dep (e.g. /admin/users) stay reachable
@@ -151,7 +157,6 @@ CurrentAppAdmin = Annotated["User", Depends(_require_app_admin)]  # type: ignore
 
 
 # WebSocket authentication dependency
-from fastapi import WebSocket, Cookie
 
 
 _WS_TOKEN_PROTOCOL_PREFIX = "access_token."
@@ -169,7 +174,7 @@ def _extract_ws_auth(websocket: WebSocket) -> tuple[str | None, str | None]:
     app_subprotocol: str | None = None
     for proto in (p.strip() for p in raw.split(",") if p.strip()):
         if proto.startswith(_WS_TOKEN_PROTOCOL_PREFIX):
-            token = proto[len(_WS_TOKEN_PROTOCOL_PREFIX):]
+            token = proto[len(_WS_TOKEN_PROTOCOL_PREFIX) :]
         elif app_subprotocol is None:
             app_subprotocol = proto
     return token, app_subprotocol
@@ -233,13 +238,16 @@ async def get_current_user_ws(
         # "instance not bound to a Session" errors after the context manager exits
         await db.refresh(user)
         db.expunge(user)
-        return userfrom 
-        app.services.admin 
-        
-        import AdminServicedef 
-        get_admin_service(db: DBSession) -> AdminService:
+        return user
+
+
+from app.services.admin import AdminService
+
+
+def get_admin_service(db: DBSession) -> AdminService:
     """Create AdminService instance — used by admin REST routes (always
     available, independent of the optional SQLAdmin UI)."""
     return AdminService(db)
+
 
 AdminSvc = Annotated[AdminService, Depends(get_admin_service)]

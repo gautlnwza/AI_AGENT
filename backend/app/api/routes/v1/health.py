@@ -4,12 +4,17 @@ Provides Kubernetes-compatible health check endpoints:
 - /health - Simple liveness check
 - /health/live - Detailed liveness probe
 - /health/ready - Readiness probe with dependency checks
-"""# ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
+"""  # ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
+
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponsefrom sqlalchemy import textfrom app.api.deps import DBSession, Redisfrom app.core.config import settings
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+
+from app.api.deps import DBSession, Redis
+from app.core.config import settings
 from app.services.health import build_health_response
 
 router = APIRouter()
@@ -52,7 +57,10 @@ async def liveness_probe() -> dict[str, Any]:
 
 
 @router.get("/health/ready", response_model=None)
-async def readiness_probe(    db: DBSession,    redis: Redis,) -> dict[str, Any] | JSONResponse:
+async def readiness_probe(
+    db: DBSession,
+    redis: Redis,
+) -> dict[str, Any] | JSONResponse:
     """Readiness probe for Kubernetes.
 
     This endpoint checks if all dependencies are ready to handle traffic.
@@ -64,7 +72,7 @@ async def readiness_probe(    db: DBSession,    redis: Redis,) -> dict[str, Any]
         Structured response with individual check results.
         Returns 503 if any critical check fails.
     """
-    checks: dict[str, dict[str, Any]] = {}    # Database check
+    checks: dict[str, dict[str, Any]] = {}  # Database check
     try:
         start = datetime.now(UTC)
         await db.execute(text("SELECT 1"))
@@ -79,7 +87,7 @@ async def readiness_probe(    db: DBSession,    redis: Redis,) -> dict[str, Any]
             "status": "unhealthy",
             "error": str(e),
             "type": "postgresql",
-        }    # Redis check
+        }  # Redis check
     try:
         start = datetime.now(UTC)
         is_healthy = await redis.ping()
@@ -119,9 +127,7 @@ async def readiness_probe(    db: DBSession,    redis: Redis,) -> dict[str, Any]
     # Determine overall health — only db + redis are critical for readiness.
     critical = {k: v for k, v in checks.items() if k in ("database", "redis")}
     all_healthy = (
-        all(check.get("status") == "healthy" for check in critical.values())
-        if critical
-        else True
+        all(check.get("status") == "healthy" for check in critical.values()) if critical else True
     )
 
     # The admin /system page reads each service from the top level, so flatten
@@ -140,9 +146,15 @@ async def readiness_probe(    db: DBSession,    redis: Redis,) -> dict[str, Any]
 
 # Backward compatibility - keep /ready endpoint
 @router.get("/ready", response_model=None)
-async def readiness_check(    db: DBSession,    redis: Redis,) -> dict[str, Any] | JSONResponse:
+async def readiness_check(
+    db: DBSession,
+    redis: Redis,
+) -> dict[str, Any] | JSONResponse:
     """Readiness check (alias for /health/ready).
 
     Deprecated: Use /health/ready instead.
     """
-    return await readiness_probe(        db=db,        redis=redis,    )
+    return await readiness_probe(
+        db=db,
+        redis=redis,
+    )

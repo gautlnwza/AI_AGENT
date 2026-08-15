@@ -4,12 +4,11 @@ Pure data-access functions. Always `db.flush()` + `db.refresh()`, never
 `db.commit()` — the session auto-commits in `get_db_session`.
 """
 
-uuid
-import UUID
-from sqlalchemy import func
+from typing import Any
+from uuid import UUID
 
-sqlalchemy.ext.asyncio
-import AsyncSession
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.item import Item
 
@@ -29,10 +28,10 @@ async def list_for_owner(
     base = select(Item).where(Item.owner_id == owner_id)
     total = (await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
     rows = (
-        await db.execute(
-            base.order_by(Item.created_at.desc()).offset(skip).limit(limit)
-        )
-    ).scalars().all()
+        (await db.execute(base.order_by(Item.created_at.desc()).offset(skip).limit(limit)))
+        .scalars()
+        .all()
+    )
     return list(rows), int(total)
 
 

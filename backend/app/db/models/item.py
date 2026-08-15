@@ -8,12 +8,9 @@ or copy/rename for each new domain.
 
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, String
-
-sqlalchemy.dialects.postgresql
-sqlalchemy.orm
-import Mapped
-import mapped_column
+from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
 
@@ -22,9 +19,7 @@ class Item(Base, TimestampMixin):
     """Owned resource — every Item belongs to one User."""
 
     __tablename__ = "items"
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),

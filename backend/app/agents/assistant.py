@@ -7,27 +7,35 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic_ai import Agent, ModelRetryfrom pydantic_ai.capabilities import (
+from pydantic_ai import Agent
+from pydantic_ai.capabilities import (
     ReinjectSystemPrompt,
-    Thinking,)
+    Thinking,
+)
 from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     SystemPromptPart,
     TextPart,
     UserPromptPart,
-)from pydantic_ai.models.google import GoogleModel
-from pydantic_ai.providers.google import GoogleProviderfrom pydantic_ai.settings import ModelSettings
+)
+from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.providers.google import GoogleProvider
+from pydantic_ai.settings import ModelSettings
 
-from app.agents.prompts import DEFAULT_SYSTEM_PROMPTfrom app.agents.tools import get_current_datetimefrom app.core.config import settings
+from app.agents.prompts import DEFAULT_SYSTEM_PROMPT
+from app.agents.tools import get_current_datetime
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
 
 def _build_model(model_name: str):
     return GoogleModel(
         model_name or settings.AI_MODEL,
         provider=GoogleProvider(api_key=settings.GOOGLE_API_KEY),
     )
+
 
 @dataclass
 class Deps:
@@ -37,7 +45,8 @@ class Deps:
     """
 
     user_id: str | None = None
-    user_name: str | None = None    metadata: dict[str, Any] = field(default_factory=dict)
+    user_name: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class AssistantAgent:
@@ -59,9 +68,13 @@ class AssistantAgent:
         # (gpt-5.5, o1, …) reject the parameter entirely, so we only forward
         # it to the model when explicitly requested.
         self.temperature = temperature
-        self.thinking_effort = thinking_effort if thinking_effort is not None else (
-            settings.AI_THINKING_EFFORT if settings.AI_THINKING_ENABLED else None
-        )        self.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT        self._agent: Agent[Deps, str] | None = None
+        self.thinking_effort = (
+            thinking_effort
+            if thinking_effort is not None
+            else (settings.AI_THINKING_EFFORT if settings.AI_THINKING_ENABLED else None)
+        )
+        self.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
+        self._agent: Agent[Deps, str] | None = None
 
     def _create_agent(self) -> Agent[Deps, str]:
         """Create and configure the PydanticAI agent."""

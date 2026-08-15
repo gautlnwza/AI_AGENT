@@ -10,23 +10,31 @@ Houses framework-agnostic helpers used by every WebSocket agent route:
 Framework-specific concerns (multimodal input, streaming events) stay in the route.
 """
 
+import json
 import logging
-from typing import Anyimport json
-from datetime import UTC, datetimefrom uuid import UUID
-from fastapi import WebSocket, WebSocketDisconnectfrom pydantic_ai.messages import (
+from datetime import UTC, datetime
+from typing import Any
+from uuid import UUID
+
+from fastapi import WebSocket, WebSocketDisconnect
+from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     SystemPromptPart,
     TextPart,
     UserPromptPart,
-)from app.api.deps import get_conversation_service
+)
+
+from app.api.deps import get_conversation_service
+from app.db.session import get_db_context
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationUpdate,
     MessageCreate,
     ToolCallComplete,
     ToolCallCreate,
-)from app.db.session import get_db_context
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,11 +68,14 @@ class AgentConnectionManager:
         """Remove a WebSocket connection."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-        logger.info(f"Agent WebSocket disconnected. Total connections: {len(self.active_connections)}")
+        logger.info(
+            f"Agent WebSocket disconnected. Total connections: {len(self.active_connections)}"
+        )
 
     async def send_event(self, websocket: WebSocket, event_type: str, data: Any) -> bool:
         """Forward to the module-level :func:`send_event`."""
         return await send_event(websocket, event_type, data)
+
 
 def build_message_history(history: list[dict[str, str]]) -> list[ModelRequest | ModelResponse]:
     """Convert conversation history to PydanticAI message format."""
@@ -80,12 +91,14 @@ def build_message_history(history: list[dict[str, str]]) -> list[ModelRequest | 
 
     return model_history
 
+
 def truncate_title(text: str, limit: int = 50) -> str:
     """Return text truncated to ``limit`` characters."""
     return text[:limit] if len(text) > limit else text
 
 
-async def persist_user_turn(    user_message: str,
+async def persist_user_turn(
+    user_message: str,
     file_ids: list[Any],
     requested_conversation_id: str | None,
     current_conversation_id: str | None,
@@ -100,7 +113,8 @@ async def persist_user_turn(    user_message: str,
     """
     newly_created = False
     organization_id: str | None = None
-    try:        async with get_db_context() as db:
+    try:
+        async with get_db_context() as db:
             conv_service = get_conversation_service(db)
 
             if requested_conversation_id:
@@ -109,9 +123,11 @@ async def persist_user_turn(    user_message: str,
                 if not conv.title and user_message:
                     await conv_service.update_conversation(
                         UUID(requested_conversation_id),
-                        ConversationUpdate(title=truncate_title(user_message)),                    )            elif not current_conversation_id:                conversation = await conv_service.create_conversation(
-                    ConversationCreate(                        title=truncate_title(user_message),
+                        ConversationUpdate(title=truncate_title(user_message)),
                     )
+            elif not current_conversation_id:
+                conversation = await conv_service.create_conversation(
+                    ConversationCreate(title=truncate_title(user_message))
                 )
                 current_conversation_id = str(conversation.id)
                 newly_created = True
@@ -124,7 +140,8 @@ async def persist_user_turn(    user_message: str,
                 try:
                     await conv_service.link_files_to_message(user_msg.id, file_ids)
                 except Exception as e:
-                    logger.warning(f"Failed to link files: {e}")    except Exception as e:
+                    logger.warning(f"Failed to link files: {e}")
+    except Exception as e:
         logger.warning(f"Failed to persist conversation: {e}")
 
     return current_conversation_id, newly_created, organization_id
@@ -146,7 +163,8 @@ async def persist_assistant_turn(
     collected_tool_calls: list[dict[str, Any]],
 ) -> str | None:
     """Persist the assistant message and any tool calls. Returns the saved message id."""
-    try:        async with get_db_context() as db:
+    try:
+        async with get_db_context() as db:
             conv_service = get_conversation_service(db)
             assistant_msg = await conv_service.add_message(
                 UUID(conversation_id),
@@ -174,6 +192,7 @@ async def persist_assistant_turn(
                         )
                 except Exception as e:
                     logger.warning(f"Failed to persist tool call: {e}")
-            return str(assistant_msg.id)    except Exception as e:
+            return str(assistant_msg.id)
+    except Exception as e:
         logger.warning(f"Failed to persist assistant response: {e}")
         return None

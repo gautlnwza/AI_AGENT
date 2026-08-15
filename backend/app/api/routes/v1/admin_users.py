@@ -11,14 +11,19 @@ Endpoints:
 """
 
 from datetime import timedelta
-from typing import Anyfrom uuid import UUID
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, Query, Request, status
 
-from app.api.deps import CurrentAdmin, DBSession, UserSvcfrom app.core.security import create_access_token
+from app.api.deps import CurrentAdmin, DBSession, UserSvc
+from app.core.security import create_access_token
 from app.schemas.conversation_share import AdminUserList
 from app.schemas.user import UserRead, UserUpdate
 
 router = APIRouter()
+
+
 @router.get("", response_model=AdminUserList)
 async def list_users(
     _: CurrentAdmin,
@@ -49,7 +54,8 @@ async def update_user(
     db: DBSession,
     service: UserSvc,
 ) -> Any:
-    user = await service.update(user_id, user_in)    return user
+    user = await service.update(user_id, user_in)
+    return user
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
@@ -59,8 +65,10 @@ async def delete_user(
     admin: CurrentAdmin,
     db: DBSession,
     service: UserSvc,
-) -> None:    await service.get_by_id(user_id)  # raises 404 if not found
+) -> None:
+    await service.get_by_id(user_id)  # raises 404 if not found
     await service.delete(user_id)
+
 
 @router.post("/{user_id}/impersonate", response_model=dict)
 async def impersonate_user(
@@ -75,7 +83,8 @@ async def impersonate_user(
     token = create_access_token(
         subject=str(target.id),
         expires_delta=timedelta(hours=1),
-    )    return {
+    )
+    return {
         "access_token": token,
         "token_type": "bearer",
         "impersonated_user_id": str(target.id),

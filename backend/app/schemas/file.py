@@ -1,13 +1,14 @@
 """Schemas for file upload operations."""
 
-uuid
-import UUID
+from datetime import datetime
+from uuid import UUID
 
 from app.schemas.base import BaseSchema
 
 
 class FileUploadResponse(BaseSchema):
     """Response after successful file upload."""
+
     id: UUID
     filename: str
     mime_type: str

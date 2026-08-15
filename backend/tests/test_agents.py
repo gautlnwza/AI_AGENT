@@ -6,7 +6,9 @@ import pytest
 from pydantic_ai.models.test import TestModel
 
 from app.agents.assistant import AssistantAgent, Deps, get_agent, run_agent
-from app.agents.prompts import DEFAULT_SYSTEM_PROMPTfrom app.agents.tools.datetime_tool import get_current_datetime
+from app.agents.prompts import DEFAULT_SYSTEM_PROMPTfrom 
+app.agents.tools.datetime_tool 
+import get_current_datetime
 
 
 class TestDeps:

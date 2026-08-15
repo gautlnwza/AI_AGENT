@@ -1,7 +1,9 @@
 """File upload and download endpoints for chat attachments."""
 
 import logging
-from typing import Anyfrom uuid import UUID
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 
@@ -27,9 +29,12 @@ async def upload_file(
     if not is_valid:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
 
-    file_type = file_upload_svc.classify_file(file.content_type or "", file.filename or "unknown")    parsed_content = await file_upload_svc.parse_content(data, file_type, file.content_type or "")
+    file_type = file_upload_svc.classify_file(file.content_type or "", file.filename or "unknown")
+    parsed_content = await file_upload_svc.parse_content(data, file_type, file.content_type or "")
     storage = get_file_storage()
-    storage_path = await storage.save(str(current_user.id), file.filename or "unknown", data)    chat_file = await file_upload_svc.create_chat_file(        user_id=current_user.id,
+    storage_path = await storage.save(str(current_user.id), file.filename or "unknown", data)
+    chat_file = await file_upload_svc.create_chat_file(
+        user_id=current_user.id,
         filename=file.filename or "unknown",
         mime_type=file.content_type or "application/octet-stream",
         size=len(data),
@@ -47,11 +52,13 @@ async def upload_file(
     )
 
 
-@router.get("/{file_id}")async def download_file(
+@router.get("/{file_id}")
+async def download_file(
     file_id: UUID,
     file_upload_svc: FileUploadSvc,
     current_user: CurrentUser,
-    disposition: str = "inline",) -> Any:
+    disposition: str = "inline",
+) -> Any:
     """Serve a file. Only the owner can access their files.
 
     By default the response is ``Content-Disposition: inline`` so PDFs, images
@@ -59,8 +66,12 @@ async def upload_file(
     by the chat file-preview panel). Pass ``?disposition=attachment`` to force
     the browser's download dialog (used by the explicit "Download" button).
     """
-    try:        chat_file = await file_upload_svc.get_user_file(file_id, current_user.id)    except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found") from None
+    try:
+        chat_file = await file_upload_svc.get_user_file(file_id, current_user.id)
+    except NotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        ) from None
 
     storage = get_file_storage()
     file_path = storage.get_full_path(chat_file.storage_path)
@@ -84,13 +95,19 @@ async def upload_file(
     return FileResponse(path=file_path, media_type=chat_file.mime_type, headers=headers)
 
 
-@router.get("/{file_id}/info", response_model=FileInfo)async def get_file_info(
+@router.get("/{file_id}/info", response_model=FileInfo)
+async def get_file_info(
     file_id: UUID,
     file_upload_svc: FileUploadSvc,
-    current_user: CurrentUser,) -> Any:
+    current_user: CurrentUser,
+) -> Any:
     """Get file metadata. Only the owner can access."""
-    try:        chat_file = await file_upload_svc.get_user_file(file_id, current_user.id)    except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found") from None
+    try:
+        chat_file = await file_upload_svc.get_user_file(file_id, current_user.id)
+    except NotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        ) from None
 
     return FileInfo(
         id=chat_file.id,

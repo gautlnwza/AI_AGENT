@@ -5,9 +5,11 @@ Contains business logic for user operations. Uses UserRepository for database ac
 
 import logging
 from typing import TYPE_CHECKING, Any
-from uuid import UUIDfrom sqlalchemy import func, select
+from uuid import UUID
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.config import settings
+
 from app.core.exceptions import AlreadyExistsError, AuthenticationError, NotFoundError
 from app.core.security import (
     create_magic_link_token,
@@ -16,18 +18,26 @@ from app.core.security import (
     verify_password,
     verify_special_token,
 )
-from app.db.models.user import User, UserRolefrom app.repositories import user_repofrom app.schemas.user import UserCreate, UserUpdate
+from app.db.models.user import User, UserRole
+from app.repositories import user_repo
+from app.schemas.user import UserCreate, UserUpdate
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from app.schemas.conversation_share import AdminUserList
+    from app.schemas.conversation_share import AdminUserList, AdminUserRead
 
 
 class UserService:
-    """Service for user-related business logic."""    def __init__(self, db: AsyncSession):
-        self.db = db    async def _repo(self, func, /, *args, **kwargs):
+    """Service for user-related business logic."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def _repo(self, func, /, *args, **kwargs):
         """Invoke an async PostgreSQL repo function with the session."""
         return await func(self.db, *args, **kwargs)
+
     async def get_by_id(self, user_id: UUID) -> User:
         """Get user by ID.
 
@@ -56,9 +66,11 @@ class UserService:
         return await self._repo(user_repo.get_multi, skip=skip, limit=limit)
 
     async def list_paginated(self) -> Any:
-        """Return paginated user list (fastapi-pagination Page)."""        from fastapi_pagination.ext.sqlalchemy import paginate
+        """Return paginated user list (fastapi-pagination Page)."""
+        from fastapi_pagination.ext.sqlalchemy import paginate
 
         return await paginate(self.db, user_repo.list_query())
+
     async def delete_non_admins(self) -> int:
         """Bulk-delete users without the admin role. Returns affected row count."""
         return await self._repo(user_repo.delete_non_admins)
@@ -77,9 +89,6 @@ class UserService:
         sort_dir: str = "desc",
     ) -> "AdminUserList":
         """Admin: list users with conversation counts."""
-    
-from app.schemas.conversation_share import AdminUserList, AdminUserRead
-
         rows, total = await self._repo(
             user_repo.admin_list_with_counts,
             skip=skip,
@@ -118,7 +127,8 @@ from app.schemas.conversation_share import AdminUserList, AdminUserRead
             raise AlreadyExistsError(
                 message="Email already registered",
                 details={"email": user_in.email},
-            )        existing_count = (
+            )
+        existing_count = (
             await self.db.execute(select(func.count()).select_from(User))
         ).scalar_one()
         is_first_user = existing_count == 0
@@ -130,7 +140,10 @@ from app.schemas.conversation_share import AdminUserList, AdminUserRead
             full_name=user_in.full_name,
             role=UserRole.ADMIN.value if is_first_user else user_in.role.value,
             is_app_admin=is_first_user,
-        )        return user    async def get_or_create_oauth_user(
+        )
+        return user
+
+    async def get_or_create_oauth_user(
         self,
         *,
         provider: str,
@@ -164,7 +177,9 @@ from app.schemas.conversation_share import AdminUserList, AdminUserRead
             full_name=full_name,
             oauth_provider=provider,
             oauth_id=provider_id,
-        )        return user
+        )
+        return user
+
     async def authenticate(self, email: str, password: str) -> User:
         """Authenticate user by email and password.
 
@@ -206,8 +221,7 @@ from app.schemas.conversation_share import AdminUserList, AdminUserRead
         """
         import contextlib
 
-    
-from app.services.file_storage import get_file_storage
+        from app.services.file_storage import get_file_storage
 
         ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
         if content_type not in ALLOWED_AVATAR_TYPES:
@@ -225,7 +239,9 @@ from app.services.file_storage import get_file_storage
 
         # Save new avatar
         storage_path = await storage.save(f"avatars/{user_id}", filename, file_data)
-        return await self._repo(user_repo.update, db_user=user, update_data={"avatar_url": storage_path})
+        return await self._repo(
+            user_repo.update, db_user=user, update_data={"avatar_url": storage_path}
+        )
 
     async def delete(self, user_id: UUID) -> User:
         """Delete user.
@@ -273,9 +289,7 @@ from app.services.file_storage import get_file_storage
         try:
             user_id = UUID(str(payload["sub"]))
         except (TypeError, ValueError) as exc:
-            raise AuthenticationError(
-                message="Reset link is invalid or has expired"
-            ) from exc
+            raise AuthenticationError(message="Reset link is invalid or has expired") from exc
 
         user = await self.get_by_id(user_id)
         if not user.is_active:
@@ -285,7 +299,8 @@ from app.services.file_storage import get_file_storage
             user_repo.update,
             db_user=user,
             update_data={"hashed_password": get_password_hash(new_password)},
-        )        return user
+        )
+        return user
 
     # ------------------------------------------------------------------
     # Magic-link sign-in flow
@@ -308,9 +323,7 @@ from app.services.file_storage import get_file_storage
         try:
             user_id = UUID(str(payload["sub"]))
         except (TypeError, ValueError) as exc:
-            raise AuthenticationError(
-                message="Magic link is invalid or has expired"
-            ) from exc
+            raise AuthenticationError(message="Magic link is invalid or has expired") from exc
 
         user = await self.get_by_id(user_id)
         if not user.is_active:

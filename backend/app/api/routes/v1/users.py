@@ -3,8 +3,9 @@
 
 from typing import Any
 from uuid import UUID
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
-from fastapi.responses import FileResponsefrom fastapi_pagination import Page
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
+from fastapi_pagination import Page
 from app.api.deps import (
     CurrentAdmin,
     CurrentUser,
@@ -15,6 +16,7 @@ from app.schemas.user import UserRead, UserUpdate
 from app.services.file_storage import get_file_storage
 
 router = APIRouter()
+
 
 @router.get("/me", response_model=UserRead)
 async def read_current_user(
@@ -43,6 +45,7 @@ async def update_current_user(
         user_in.role = None
     user = await user_service.update(current_user.id, user_in)
     return user
+
 
 @router.post("/me/avatar", response_model=UserRead)
 async def upload_avatar(
@@ -73,6 +76,7 @@ async def get_avatar(user_id: UUID, user_service: UserSvc) -> Any:
         raise HTTPException(status_code=404, detail="Avatar file not found")
     return FileResponse(path=file_path, media_type="image/jpeg")
 
+
 @router.get("", response_model=Page[UserRead])
 async def read_users(
     user_service: UserSvc,
@@ -80,6 +84,7 @@ async def read_users(
 ) -> Any:
     """Get all users (admin only)."""
     return await user_service.list_paginated()
+
 
 @router.get("/{user_id}", response_model=UserRead)
 async def read_user(

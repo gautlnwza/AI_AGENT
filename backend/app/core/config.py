@@ -1,4 +1,5 @@
 """Application configuration using Pydantic BaseSettings."""
+
 # ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
 from pathlib import Path
 from typing import Literal
@@ -87,6 +88,7 @@ class Settings(BaseSettings):
                 "Generate a secure key with: openssl rand -hex 32"
             )
         return v
+
     # === JWT Settings ===
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
@@ -142,9 +144,9 @@ class Settings(BaseSettings):
         env = info.data.get("ENVIRONMENT", "local") if info.data else "local"
         if "*" in v and env == "production":
             raise ValueError(
-                "CORS_ORIGINS cannot contain '*' in production! "
-                "Specify explicit allowed origins."
+                "CORS_ORIGINS cannot contain '*' in production! Specify explicit allowed origins."
             )
         return v
+
 
 settings = Settings()

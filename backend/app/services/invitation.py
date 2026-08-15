@@ -9,7 +9,6 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.exceptions import (
     AlreadyExistsError,
     AuthenticationError,
@@ -18,8 +17,9 @@ from app.core.exceptions import (
     NotFoundError,
     PaymentRequiredError,
 )
-from app.db.models.organization import InvitationStatus, OrgRole
+from app.models.organization import InvitationStatus, OrgRole
 from app.repositories import invitation_repo, member_repo, organization_repo, user_repo
+
 logger = logging.getLogger(__name__)
 
 _ADMIN_INVITABLE_ROLES = {OrgRole.MEMBER.value, OrgRole.VIEWER.value}
@@ -92,7 +92,8 @@ class InvitationService:
             organization_id,
             role,
             requester_id,
-        )        return invite
+        )
+        return invite
 
     async def list_for_org(
         self,

@@ -9,7 +9,9 @@ Endpoints:
     GET  /admin/users/{user_id}/conversations — List conversations for a specific user
 """
 
-from typing import Any, Literalfrom uuid import UUID
+from typing import Any, Literal
+from uuid import UUID
+
 from fastapi import APIRouter, Query
 
 from app.api.deps import ConversationSvc, CurrentAdmin, UserSvc
@@ -17,6 +19,7 @@ from app.schemas.conversation import ConversationReadWithMessages
 from app.schemas.conversation_share import AdminConversationList, AdminUserList
 
 router = APIRouter()
+
 
 @router.get("", response_model=AdminConversationList)
 async def admin_list_conversations(

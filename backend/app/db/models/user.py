@@ -41,6 +41,7 @@ class User(Base, TimestampMixin):
     )
     oauth_provider: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     oauth_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+
     @property
     def user_role(self) -> UserRole:
         """Get role as enum."""

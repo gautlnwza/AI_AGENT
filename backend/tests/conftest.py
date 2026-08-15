@@ -4,12 +4,16 @@ Uses anyio for async testing instead of pytest-asyncio.
 This allows using the same async primitives that Starlette uses internally.
 See: https://anyio.readthedocs.io/en/stable/testing.html
 """# ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
-from collections.abc import AsyncGeneratorfrom unittest.mock import AsyncMock, MagicMock
+from collections.abc import AsyncGeneratorfrom 
+unittest.mock 
+import AsyncMock, MagicMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import appfrom app.api.deps import get_redis
-from app.clients.redis import RedisClientfrom app.api.deps import get_db_session
+from app.main import appfrom app.api.deps 
+import get_redis
+from app.clients.redis import RedisClientfrom app.api.deps 
+import get_db_session
 
 @pytest.fixture
 def anyio_backend() -> str:

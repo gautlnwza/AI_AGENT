@@ -7,7 +7,9 @@ The endpoints are:
 - GET /admin/ratings - List all ratings with filtering
 - GET /admin/ratings/summary - Get aggregated rating statistics
 - GET /admin/ratings/export - Export ratings as JSON or CSV
-"""from typing import Any
+"""
+
+from typing import Any
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -16,6 +18,7 @@ from app.api.deps import CurrentAdmin, MessageRatingSvc
 from app.schemas.message_rating import MessageRatingList, RatingSummary
 
 router = APIRouter()
+
 
 @router.get("", response_model=MessageRatingList)
 async def list_ratings_admin(

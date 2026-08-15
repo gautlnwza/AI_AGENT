@@ -4,14 +4,20 @@ Wraps `item_repo` with business logic + ownership checks. Routes call THIS,
 never the repo directly. Domain exceptions (`NotFoundError`,
 `AuthorizationError`) get auto-mapped to HTTP responses by the global
 exception handler.
-"""from uuid import UUIDfrom sqlalchemy.ext.asyncio import AsyncSession
-from app.core.exceptions import AuthorizationError, NotFoundError
+"""
+
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.exceptions import NotFoundError
 from app.db.models.item import Item
 from app.repositories import item as item_repo
 from app.schemas.item import ItemCreate, ItemUpdate
 
 
-class ItemService:    def __init__(self, db: AsyncSession) -> None:
+class ItemService:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
     async def get(self, *, item_id: UUID, owner_id: UUID) -> Item:
@@ -26,9 +32,7 @@ class ItemService:    def __init__(self, db: AsyncSession) -> None:
     async def list(
         self, *, owner_id: UUID, skip: int = 0, limit: int = 50
     ) -> tuple[list[Item], int]:
-        return await item_repo.list_for_owner(
-            self.db, owner_id=owner_id, skip=skip, limit=limit
-        )
+        return await item_repo.list_for_owner(self.db, owner_id=owner_id, skip=skip, limit=limit)
 
     async def create(self, *, owner_id: UUID, data: ItemCreate) -> Item:
         return await item_repo.create(
@@ -39,9 +43,7 @@ class ItemService:    def __init__(self, db: AsyncSession) -> None:
             is_published=data.is_published,
         )
 
-    async def update(
-        self, *, item_id: UUID, owner_id: UUID, data: ItemUpdate
-    ) -> Item:
+    async def update(self, *, item_id: UUID, owner_id: UUID, data: ItemUpdate) -> Item:
         item = await self.get(item_id=item_id, owner_id=owner_id)
         update_data = data.model_dump(exclude_unset=True)
         if not update_data:

@@ -6,9 +6,12 @@ creation. Moves parsing helpers and file classification out of the route layer.
 
 import logging
 from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import NotFoundError
 from app.db.models.chat_file import ChatFile
+from app.repositories import chat_file as chat_file_repo
 from app.services.file_storage import (
     ALLOWED_MIME_TYPES,
     MAX_UPLOAD_SIZE,
@@ -56,10 +59,12 @@ class FileUploadService:
         Returns extracted text content or None if parsing fails.
         """
         if file_type == "text":
-            return self._parse_text_content(data, mime_type)        elif file_type == "pdf":
+            return self._parse_text_content(data, mime_type)
+        elif file_type == "pdf":
             return self._parse_pdf_content(data)
         elif file_type == "docx":
-            return self._parse_docx_content(data)        return None
+            return self._parse_docx_content(data)
+        return None
 
     @staticmethod
     def _parse_text_content(data: bytes, mime_type: str) -> str | None:
@@ -68,6 +73,7 @@ class FileUploadService:
             return data.decode("utf-8")
         except (UnicodeDecodeError, ValueError):
             return None
+
     @staticmethod
     def _parse_pdf_content(data: bytes) -> str | None:
         """Extract text from PDF using PyMuPDF."""
@@ -103,6 +109,7 @@ class FileUploadService:
         """Extract text from DOCX."""
         try:
             import io
+
             from docx import Document as DOCXDocument
 
             doc: Any = DOCXDocument(io.BytesIO(data))
@@ -110,17 +117,13 @@ class FileUploadService:
         except Exception as e:
             logger.warning(f"DOCX parsing failed: {e}")
             return None
+
     async def get_user_file(self, file_id: Any, user_id: Any) -> ChatFile:
         """Get a file by ID, verifying ownership.
 
         Raises:
             NotFoundError: If file does not exist or user has no access.
         """
-    
-from app.core.exceptions import NotFoundError
-    
-from app.repositories import chat_file as chat_file_repo
-
         chat_file = await chat_file_repo.get_by_id(self.db, file_id)
         if not chat_file or str(chat_file.user_id) != str(user_id):
             raise NotFoundError(message="File not found")
@@ -138,9 +141,6 @@ from app.repositories import chat_file as chat_file_repo
         parsed_content: str | None = None,
     ) -> ChatFile:
         """Create a chat file record in the database."""
-    
-from app.repositories import chat_file_repo
-
         return await chat_file_repo.create(
             self.db,
             user_id=user_id,

@@ -6,6 +6,7 @@ This command is useful for development and testing.
 Uses random data generation - install faker for better data:
     uv add faker --group dev
 """
+
 import asyncio
 import random
 import string
@@ -17,6 +18,7 @@ from app.commands import command, info, success, warning
 # Try to import Faker for better data generation
 try:
     from faker import Faker
+
     fake = Faker()
     HAS_FAKER = True
 except ImportError:
@@ -28,7 +30,7 @@ def random_email() -> str:
     """Generate a random email address."""
     if HAS_FAKER:
         return str(fake.email())
-    random_str = ''.join(random.choices(string.ascii_lowercase, k=8))
+    random_str = "".join(random.choices(string.ascii_lowercase, k=8))
     return f"{random_str}@example.com"
 
 

@@ -3,6 +3,7 @@
 This module is only imported when JWT auth is enabled (see
 `app/db/models/__init__.py` and `alembic/env.py`).
 """
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -26,9 +27,7 @@ class MessageRating(Base, TimestampMixin):
         CheckConstraint("rating IN (1, -1)", name="ck_rating_value"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     message_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("messages.id", ondelete="CASCADE"),

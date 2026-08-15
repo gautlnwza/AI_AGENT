@@ -9,8 +9,8 @@ layered pattern (model → repo → service → route). Replace or delete this
 migration when you rename or remove the Item domain.
 """
 
-sqlalchemy.dialects.postgresql
-import UUID as PG_UUID
+import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from alembic import op
 
@@ -22,7 +22,8 @@ depends_on = None
 
 def upgrade() -> None:
     op.create_table(
-        "items",        sa.Column(
+        "items",
+        sa.Column(
             "id",
             PG_UUID(as_uuid=True),
             primary_key=True,
@@ -33,7 +34,8 @@ def upgrade() -> None:
             PG_UUID(as_uuid=True),
             sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
-        ),        sa.Column("name", sa.String(255), nullable=False),
+        ),
+        sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("is_published", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column(

@@ -26,11 +26,16 @@ from pydantic_ai import (
 from pydantic_ai.messages import BinaryContent, TextPart, ThinkingPart, ThinkingPartDelta
 
 from app.agents.assistant import Deps, get_agent
+from app.api.deps import get_conversation_service
+from app.db.session import get_db_context
 from app.services.agent import (
-    build_message_history,    persist_assistant_turn,
-    persist_user_turn,    send_event,
-)from app.api.deps import get_conversation_service
-from app.db.session import get_db_contextfrom app.services.file_storage import get_file_storage
+    build_message_history,
+    persist_assistant_turn,
+    persist_user_turn,
+    send_event,
+)
+from app.services.file_storage import get_file_storage
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,9 +44,13 @@ class AgentSession:
 
     def __init__(
         self,
-        websocket: WebSocket,    ) -> None:
-        self.websocket = websocket        self.conversation_history: list[dict[str, str]] = []
-        self.deps = Deps()        self.current_conversation_id: str | None = None
+        websocket: WebSocket,
+    ) -> None:
+        self.websocket = websocket
+        self.conversation_history: list[dict[str, str]] = []
+        self.deps = Deps()
+        self.current_conversation_id: str | None = None
+
     async def process_message(self, data: dict[str, Any]) -> None:
         """Process one user turn: persist input, run the agent, stream events, persist output."""
         user_message = data.get("message", "")
@@ -49,7 +58,10 @@ class AgentSession:
 
         if not user_message and not file_ids:
             await send_event(self.websocket, "error", {"message": "Empty message"})
-            return        self.current_conversation_id, newly_created, organization_id = await persist_user_turn(            user_message,
+            return
+
+        self.current_conversation_id, newly_created, organization_id = await persist_user_turn(
+            user_message,
             file_ids,
             requested_conversation_id=data.get("conversation_id"),
             current_conversation_id=self.current_conversation_id,
@@ -67,7 +79,8 @@ class AgentSession:
                 model_name=data.get("model"),
                 thinking_effort=data.get("thinking_effort"),
             )
-            model_history = build_message_history(self.conversation_history)            user_input = await self._build_multimodal_input(user_message, file_ids)
+            model_history = build_message_history(self.conversation_history)
+            user_input = await self._build_multimodal_input(user_message, file_ids)
             collected_tool_calls: list[dict[str, Any]] = []
             async with assistant.agent.iter(
                 user_input, deps=self.deps, message_history=model_history
@@ -79,7 +92,8 @@ class AgentSession:
                 self.conversation_history.append({"role": "user", "content": user_message})
                 self.conversation_history.append(
                     {"role": "assistant", "content": agent_run.result.output}
-                )            assistant_msg_id: str | None = None
+                )
+                assistant_msg_id: str | None = None
             if self.current_conversation_id and agent_run.result is not None:
                 assistant_msg_id = await persist_assistant_turn(
                     self.current_conversation_id,
@@ -101,11 +115,13 @@ class AgentSession:
                 self.websocket,
                 "complete",
                 {"conversation_id": self.current_conversation_id},
-            )        except WebSocketDisconnect:
+            )
+        except WebSocketDisconnect:
             raise
         except Exception as e:
             logger.exception(f"Error processing agent request: {e}")
             await send_event(self.websocket, "error", {"message": str(e)})
+
     async def _build_multimodal_input(
         self, user_message: str, file_ids: list[Any]
     ) -> str | list[Any]:
@@ -115,7 +131,8 @@ class AgentSession:
 
         storage = get_file_storage()
         image_parts: list[BinaryContent] = []
-        file_context_parts: list[str] = []        async with get_db_context() as file_db:
+        file_context_parts: list[str] = []
+        async with get_db_context() as file_db:
             attached_files = await get_conversation_service(file_db).list_attached_files(file_ids)
             for chat_file in attached_files:
                 try:
@@ -134,6 +151,7 @@ class AgentSession:
         if image_parts:
             return [full_text, *image_parts]
         return full_text
+
     async def _stream_agent_run(
         self,
         agent_run: Any,
@@ -146,9 +164,7 @@ class AgentSession:
                 prompt_text = (
                     node.user_prompt if isinstance(node.user_prompt, str) else user_message
                 )
-                await send_event(
-                    self.websocket, "user_prompt_processed", {"prompt": prompt_text}
-                )
+                await send_event(self.websocket, "user_prompt_processed", {"prompt": prompt_text})
             elif Agent.is_model_request_node(node):
                 await send_event(self.websocket, "model_request_start", {})
                 async with node.stream(agent_run.ctx) as request_stream:

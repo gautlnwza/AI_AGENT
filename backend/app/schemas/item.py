@@ -1,4 +1,5 @@
 """Item schemas — example resource scaffold."""
+
 from uuid import UUID
 
 from pydantic import Field
@@ -28,8 +29,10 @@ class ItemUpdate(BaseSchema):
 
 class ItemRead(ItemBase, TimestampSchema):
     """Response shape for ``GET /items/{id}`` and inside ``ItemList``."""
+
     id: UUID
     owner_id: UUID
+
 
 class ItemList(BaseSchema):
     """Paginated list response."""
