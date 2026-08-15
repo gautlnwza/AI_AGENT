@@ -7,5 +7,7 @@ export default createMiddleware({
 });
 
 export const config = {
-  matcher: ["/", "/(en|pl)/:path*"],
+  // Localize every user-facing route, including unprefixed paths such as
+  // `/login` and `/register`. Exclude Next internals, API handlers and files.
+  matcher: ["/((?!api|_next|.*\\..*).*)"],
 };

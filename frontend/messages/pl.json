@@ -1,5 +1,18 @@
 {
-  "common": { "welcome": "Witaj" },
+  "common": { "welcome": "Witaj", "cancel": "Anuluj", "submit": "Wyślij" },
+  "chat": {
+    "newChat": "Nowy czat", "newConversation": "Nowa rozmowa", "conversations": "Rozmowy",
+    "rename": "Zmień nazwę", "share": "Udostępnij", "archive": "Archiwizuj", "delete": "Usuń",
+    "noConversations": "Brak rozmów", "startNewChat": "Rozpocznij nowy czat.",
+    "shareConversation": "Udostępnij rozmowę", "shareDescription": "Nadaj innej osobie dostęp do tej rozmowy.",
+    "userIdOrEmail": "Adres e-mail", "generateShareLink": "Utwórz link", "sharedWith": "Udostępniono dla",
+    "conversationShared": "Rozmowa udostępniona", "failedToShare": "Nie udało się udostępnić rozmowy", "linkGenerated": "Utworzono link",
+    "failedToGenerateLink": "Nie udało się utworzyć linku", "copyLink": "Kopiuj link", "accessRevoked": "Dostęp cofnięty",
+    "failedToRevoke": "Nie udało się cofnąć dostępu", "thankYouFeedback": "Dziękujemy za opinię", "ratingFailed": "Nie udało się zapisać opinii",
+    "ratingRemoved": "Opinia usunięta", "saveConversationToRate": "Zapisz rozmowę przed oceną", "helpful": "Pomocne",
+    "notHelpful": "Niepomocne", "whatWentWrong": "Co poszło nie tak?", "feedbackHelp": "Powiedz, jak możemy poprawić odpowiedź.",
+    "describeIssue": "Opisz problem", "skipComment": "Pomiń komentarz"
+  },
   "marketing": {
     "nav": {
       "platform": "Platforma", "solutions": "Rozwiązania", "pricing": "Cennik", "resources": "Materiały",
@@ -14,7 +27,10 @@
         { "q": "Czy mogę wypróbować usługę za darmo?", "a": "Tak. Utwórz konto, aby rozpocząć." },
         { "q": "Czy moje dane są bezpieczne?", "a": "Twoje dane są chronione kontrolą dostępu i bezpiecznymi połączeniami." }
       ] },
-      "pricing": { "eyebrow": "Cennik", "subtitle": "Plany dla rozwijających się zespołów.", "titlePre": "Prosty cennik.", "titleEm": "Prawdziwa wartość.", "perMonth": "miesięcznie", "billedMonthly": "Rozliczenie miesięczne", "seats": "miejsc", "seatsUnit": "miejsce", "seeFull": "Zobacz pełny cennik" },
+      "pricing": {
+        "eyebrow": "Cennik", "subtitle": "Plany dla rozwijających się zespołów.", "titlePre": "Prosty cennik.", "titleEm": "Prawdziwa wartość.",
+        "teaser": { "seats": "Wielkość zespołu", "seatsUnit": "miejsc", "custom": "Indywidualnie", "perMonth": "/ miesiąc", "billedMonthly": "Rozliczenie miesięczne", "seeFull": "Zobacz pełny cennik" }
+      },
       "testimonials": { "eyebrow": "Historie klientów", "titlePre": "Uwielbiany przez zespoły", "titleEm": "wykonujące świetną pracę." },
       "finalCta": { "titlePre": "Gotowy, by", "titleEm": "pracować mądrzej?", "description": "Połącz wiedzę zespołu i osiągaj więcej.", "primary": "Zacznij", "secondary": "Skontaktuj się", "statLabel": "zespołów korzysta już z my_project", "statValue": "10k+" }
     }

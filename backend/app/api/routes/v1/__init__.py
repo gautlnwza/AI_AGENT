@@ -2,7 +2,17 @@
 
 from fastapi import APIRouter
 
-from app.api.routes.v1 import admin_stats, admin_users, auth, files, health, items, oauth, users
+from app.api.routes.v1 import (
+    admin_stats,
+    admin_users,
+    agent,
+    auth,
+    files,
+    health,
+    items,
+    oauth,
+    users,
+)
 
 v1_router = APIRouter()
 
@@ -17,6 +27,8 @@ v1_router.include_router(users.router, prefix="/users", tags=["users"])
 v1_router.include_router(oauth.router, prefix="/oauth", tags=["oauth"])
 # File upload/download routes
 v1_router.include_router(files.router, tags=["files"])
+# AI chat WebSocket + model listing
+v1_router.include_router(agent.router, tags=["agent"])
 # Admin: user management + impersonation
 v1_router.include_router(admin_users.router, prefix="/admin/users", tags=["admin:users"])
 v1_router.include_router(admin_stats.router, prefix="/admin", tags=["admin:stats"])

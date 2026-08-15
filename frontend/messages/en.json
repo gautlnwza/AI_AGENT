@@ -1,5 +1,18 @@
 {
-  "common": { "welcome": "Welcome" },
+  "common": { "welcome": "Welcome", "cancel": "Cancel", "submit": "Submit" },
+  "chat": {
+    "newChat": "New chat", "newConversation": "New conversation", "conversations": "Conversations",
+    "rename": "Rename", "share": "Share", "archive": "Archive", "delete": "Delete",
+    "noConversations": "No conversations yet", "startNewChat": "Start a new chat to begin.",
+    "shareConversation": "Share conversation", "shareDescription": "Give another person access to this conversation.",
+    "userIdOrEmail": "Email address", "generateShareLink": "Create share link", "sharedWith": "Shared with",
+    "conversationShared": "Conversation shared", "failedToShare": "Could not share conversation", "linkGenerated": "Share link created",
+    "failedToGenerateLink": "Could not create share link", "copyLink": "Copy link", "accessRevoked": "Access revoked",
+    "failedToRevoke": "Could not revoke access", "thankYouFeedback": "Thanks for your feedback", "ratingFailed": "Could not save feedback",
+    "ratingRemoved": "Feedback removed", "saveConversationToRate": "Save the conversation before rating", "helpful": "Helpful",
+    "notHelpful": "Not helpful", "whatWentWrong": "What went wrong?", "feedbackHelp": "Tell us how this response could be improved.",
+    "describeIssue": "Describe the issue", "skipComment": "Skip comment"
+  },
   "marketing": {
     "nav": {
       "platform": "Platform", "solutions": "Solutions", "pricing": "Pricing", "resources": "Resources",
@@ -18,7 +31,10 @@
         { "q": "Can I try it for free?", "a": "Yes. Create an account to get started." },
         { "q": "Is my data secure?", "a": "Your data is protected with access controls and secure connections." }
       ] },
-      "pricing": { "eyebrow": "Pricing", "subtitle": "Plans that grow with your team.", "titlePre": "Simple pricing.", "titleEm": "Real value.", "perMonth": "per month", "billedMonthly": "Billed monthly", "seats": "seats", "seatsUnit": "seat", "seeFull": "See full pricing" },
+      "pricing": {
+        "eyebrow": "Pricing", "subtitle": "Plans that grow with your team.", "titlePre": "Simple pricing.", "titleEm": "Real value.",
+        "teaser": { "seats": "Team size", "seatsUnit": "seats", "custom": "Custom", "perMonth": "/ month", "billedMonthly": "Billed monthly", "seeFull": "See full pricing" }
+      },
       "testimonials": { "eyebrow": "Customer stories", "titlePre": "Loved by teams", "titleEm": "doing their best work." },
       "finalCta": { "titlePre": "Ready to", "titleEm": "work smarter?", "description": "Bring your team's knowledge together and get more done.", "primary": "Get started", "secondary": "Contact sales", "statLabel": "teams already using my_project", "statValue": "10k+" }
     }
