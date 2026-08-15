@@ -65,10 +65,15 @@ async def agent_websocket(websocket: WebSocket) -> None:
                 await send_event(websocket, "final_result", {"output": output})
             except Exception:
                 logger.exception("agent_turn_failed")
+                error_message = (
+                    "GOOGLE_API_KEY is not configured. Add it to backend/.env and restart the backend."
+                    if not settings.GOOGLE_API_KEY
+                    else "The AI agent could not complete this request."
+                )
                 await send_event(
                     websocket,
                     "error",
-                    {"message": "The AI agent could not complete this request."},
+                    {"message": error_message},
                 )
             finally:
                 await send_event(websocket, "complete", {})
