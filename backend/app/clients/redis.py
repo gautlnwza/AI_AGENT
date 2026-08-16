@@ -3,9 +3,14 @@
 Provides a class-based Redis client for connection management and operations.
 """
 
+import json
+from typing import Any, TypeVar
+
 from redis import asyncio as aioredis
 
 from app.core.config import settings
+
+JsonValue = TypeVar("JsonValue")
 
 
 class RedisClient:
@@ -54,6 +59,24 @@ class RedisClient:
             raise RuntimeError("Redis client not connected")
         await self.client.set(key, value, ex=ttl)
 
+    async def get_json(self, key: str) -> Any | None:
+        """Get and decode a JSON value by key.
+
+        Returns ``None`` when the key does not exist. Invalid JSON is allowed to
+        raise ``json.JSONDecodeError`` so callers can detect corrupted cache data.
+        """
+        value = await self.get(key)
+        return None if value is None else json.loads(value)
+
+    async def set_json(
+        self,
+        key: str,
+        value: JsonValue,
+        ttl: int | None = None,
+    ) -> None:
+        """Serialize and store a JSON-compatible value with optional TTL."""
+        await self.set(key, json.dumps(value, ensure_ascii=False), ttl=ttl)
+
     async def delete(self, key: str) -> int:
         """Delete a key. Returns number of keys deleted."""
         if not self.client:
@@ -65,6 +88,24 @@ class RedisClient:
         if not self.client:
             raise RuntimeError("Redis client not connected")
         return bool(await self.client.exists(key))
+
+    async def expire(self, key: str, ttl: int) -> bool:
+        """Set a key's expiration time in seconds."""
+        if not self.client:
+            raise RuntimeError("Redis client not connected")
+        return bool(await self.client.expire(key, ttl))
+
+    async def ttl(self, key: str) -> int:
+        """Return remaining TTL in seconds, following Redis TTL semantics."""
+        if not self.client:
+            raise RuntimeError("Redis client not connected")
+        return await self.client.ttl(key)  # type: ignore[no-any-return]
+
+    async def incr(self, key: str, amount: int = 1) -> int:
+        """Increment an integer value and return the updated value."""
+        if not self.client:
+            raise RuntimeError("Redis client not connected")
+        return await self.client.incrby(key, amount)  # type: ignore[no-any-return]
 
     async def ping(self) -> bool:
         """Ping Redis server. Returns True if connected."""

@@ -9,7 +9,9 @@ from fastapi_pagination import Page
 from app.api.deps import (
     CurrentAdmin,
     CurrentUser,
+    Redis,
     UserSvc,
+    invalidate_user_cache,
 )
 from app.db.models.user import UserRole
 from app.schemas.user import UserRead, UserUpdate
@@ -34,6 +36,7 @@ async def update_current_user(
     user_in: UserUpdate,
     current_user: CurrentUser,
     user_service: UserSvc,
+    redis: Redis,
 ) -> Any:
     """Update current user.
 
@@ -44,6 +47,7 @@ async def update_current_user(
     if user_in.role is not None and not current_user.has_role(UserRole.ADMIN):
         user_in.role = None
     user = await user_service.update(current_user.id, user_in)
+    await invalidate_user_cache(redis, current_user.id)
     return user
 
 
@@ -51,6 +55,7 @@ async def update_current_user(
 async def upload_avatar(
     user_service: UserSvc,
     current_user: CurrentUser,
+    redis: Redis,
     file: UploadFile = File(...),
 ) -> Any:
     """Upload or replace avatar image for the current user."""
@@ -61,6 +66,7 @@ async def upload_avatar(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from None
+    await invalidate_user_cache(redis, current_user.id)
     return user
 
 
@@ -106,6 +112,7 @@ async def update_user_by_id(
     user_in: UserUpdate,
     user_service: UserSvc,
     _: CurrentAdmin,
+    redis: Redis,
 ) -> Any:
     """Update user by ID (admin only).
 
@@ -114,6 +121,7 @@ async def update_user_by_id(
     Raises NotFoundError if user does not exist.
     """
     user = await user_service.update(user_id, user_in)
+    await invalidate_user_cache(redis, user_id)
     return user
 
 
@@ -122,9 +130,11 @@ async def delete_user_by_id(
     user_id: UUID,
     user_service: UserSvc,
     _: CurrentAdmin,
+    redis: Redis,
 ) -> None:
     """Delete user by ID (admin only).
 
     Raises NotFoundError if user does not exist.
     """
     await user_service.delete(user_id)
+    await invalidate_user_cache(redis, user_id)

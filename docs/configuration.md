@@ -83,6 +83,7 @@ Computed properties:
 | `REDIS_PORT` | `6379` | Redis port |
 | `REDIS_PASSWORD` | (none) | Redis password (optional) |
 | `REDIS_DB` | `0` | Redis database number |
+| `USER_CACHE_TTL_SECONDS` | `60` | How long authenticated user profiles stay cached |
 ## AI Agent
 
 | Variable | Default | Description |

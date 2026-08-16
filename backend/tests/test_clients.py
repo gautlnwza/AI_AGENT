@@ -93,6 +93,28 @@ class TestRedisClient:
         mock_aioredis.set.assert_called_once_with("test_key", "test_value", ex=60)
 
     @pytest.mark.anyio
+    async def test_get_json(self, redis_client: RedisClient, mock_aioredis: MagicMock):
+        """Test decoding a JSON value."""
+        redis_client.client = mock_aioredis
+        mock_aioredis.get.return_value = '{"active": true, "count": 2}'
+
+        result = await redis_client.get_json("test_key")
+
+        assert result == {"active": True, "count": 2}
+        mock_aioredis.get.assert_called_once_with("test_key")
+
+    @pytest.mark.anyio
+    async def test_set_json(self, redis_client: RedisClient, mock_aioredis: MagicMock):
+        """Test encoding and storing a JSON value."""
+        redis_client.client = mock_aioredis
+
+        await redis_client.set_json("test_key", {"name": "ทดสอบ"}, ttl=60)
+
+        mock_aioredis.set.assert_called_once_with(
+            "test_key", '{"name": "ทดสอบ"}', ex=60
+        )
+
+    @pytest.mark.anyio
     async def test_set_not_connected(self, redis_client: RedisClient):
         """Test setting when not connected raises error."""
         redis_client.client = None
@@ -135,6 +157,22 @@ class TestRedisClient:
 
         with pytest.raises(RuntimeError, match="not connected"):
             await redis_client.exists("test_key")
+
+    @pytest.mark.anyio
+    async def test_expire_ttl_and_incr(self, redis_client: RedisClient, mock_aioredis: MagicMock):
+        """Test expiration and counter helpers."""
+        redis_client.client = mock_aioredis
+        mock_aioredis.expire = AsyncMock(return_value=1)
+        mock_aioredis.ttl = AsyncMock(return_value=42)
+        mock_aioredis.incrby = AsyncMock(return_value=3)
+
+        assert await redis_client.expire("test_key", 60) is True
+        assert await redis_client.ttl("test_key") == 42
+        assert await redis_client.incr("counter", 2) == 3
+
+        mock_aioredis.expire.assert_called_once_with("test_key", 60)
+        mock_aioredis.ttl.assert_called_once_with("test_key")
+        mock_aioredis.incrby.assert_called_once_with("counter", 2)
 
     @pytest.mark.anyio
     async def test_ping_connected(self, redis_client: RedisClient, mock_aioredis: MagicMock):

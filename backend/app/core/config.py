@@ -106,6 +106,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str | None = None
     REDIS_DB: int = 0
+    USER_CACHE_TTL_SECONDS: int = 60
 
     @computed_field  # type: ignore[prop-decorator]
     @property
