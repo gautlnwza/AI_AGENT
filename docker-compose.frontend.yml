@@ -10,13 +10,15 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_RAG_ENABLED=false    container_name: my_project_frontend
+        - NEXT_PUBLIC_RAG_ENABLED=false
+    container_name: my_project_frontend
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
       - BACKEND_URL=http://host.docker.internal:8000
-      - BACKEND_WS_URL=ws://host.docker.internal:8000    extra_hosts:
+      - BACKEND_WS_URL=ws://host.docker.internal:8000
+    extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
     healthcheck:
