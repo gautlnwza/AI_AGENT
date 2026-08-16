@@ -23,7 +23,7 @@ ENV NEXT_PUBLIC_RAG_ENABLED=$NEXT_PUBLIC_RAG_ENABLED
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN bun run build
+RUN mkdir -p public && bun run build
 
 # Production image
 FROM base AS runner

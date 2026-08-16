@@ -46,7 +46,9 @@ export const SITE = {
 
 /** Map our locale codes → BCP-47 / Open Graph locale strings. */
 export const OG_LOCALE: Record<(typeof locales)[number], string> = {
-  en: "en_US",};
+  en: "en_US",
+  pl: "pl_PL",
+};
 
 interface PageMetaInput {
   /** Page-specific title fragment. The template adds " | <brand>". */
