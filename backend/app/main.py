@@ -7,6 +7,8 @@ from typing import TypedDict
 
 logger = logging.getLogger(__name__)
 
+from arq import create_pool
+from arq.connections import ArqRedis
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 
@@ -23,6 +25,7 @@ class LifespanState(TypedDict, total=False):
     """Lifespan state - resources available via request.state."""
 
     redis: RedisClient
+    arq_pool: ArqRedis
 
 
 @asynccontextmanager
@@ -43,7 +46,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
     redis_client = RedisClient()
     await redis_client.connect()
     state["redis"] = redis_client
+    from app.workers.settings import get_arq_redis_settings
+
+    arq_pool = await create_pool(get_arq_redis_settings())
+    state["arq_pool"] = arq_pool
     yield state
+    if "arq_pool" in state:
+        await state["arq_pool"].aclose()
     if "redis" in state:
         await state["redis"].close()
     from app.db.session import close_db

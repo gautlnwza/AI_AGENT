@@ -1,5 +1,5 @@
 # Backend development configuration
-# Usage: docker-compose up -d
+# Usage: docker compose up --build
 
 services:
   app:
@@ -13,15 +13,46 @@ services:
     volumes:
       - ./backend/app:/app/app:ro
       - ./backend/cli:/app/cli:ro
-      - media_data:/app/media    env_file:
+      - media_data:/app/media
+    env_file:
       - ./backend/.env
     environment:
       - DEBUG=true
-      - ENVIRONMENT=local      - POSTGRES_HOST=db      - REDIS_HOST=redis    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - ENVIRONMENT=local
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     networks:
-      - backend    depends_on:      db:
-        condition: service_healthy      redis:
-        condition: service_healthy    restart: unless-stopped
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: my_project_backend:dev
+    container_name: my_project_worker
+    volumes:
+      - ./backend/app:/app/app:ro
+    env_file:
+      - ./backend/.env
+    environment:
+      - ENVIRONMENT=local
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+    command: arq app.workers.settings.WorkerSettings
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     container_name: my_project_db
@@ -31,7 +62,6 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-my_project}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Port exposed only for local development - remove in production
     ports:
       - "5432:5432"
     networks:
@@ -42,10 +72,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     container_name: my_project_redis
-    # Port exposed only for local development - remove in production
     ports:
       - "6379:6379"
     volumes:
@@ -58,9 +88,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
 networks:
   backend:
     driver: bridge
 
 volumes:
-  media_data:  postgres_data:  redis_data:
+  media_data:
+  postgres_data:
+  redis_data:

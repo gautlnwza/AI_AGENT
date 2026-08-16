@@ -10,6 +10,7 @@ from app.api.routes.v1 import (
     files,
     health,
     items,
+    jobs,
     oauth,
     users,
 )
@@ -34,3 +35,5 @@ v1_router.include_router(admin_users.router, prefix="/admin/users", tags=["admin
 v1_router.include_router(admin_stats.router, prefix="/admin", tags=["admin:stats"])
 # Example Item CRUD (reference scaffold — safe to delete once you've added your own domain)
 v1_router.include_router(items.router, prefix="/items", tags=["items"])
+# Background worker demo
+v1_router.include_router(jobs.router)

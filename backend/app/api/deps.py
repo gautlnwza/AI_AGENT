@@ -5,6 +5,7 @@ Dependency injection factories for services, repositories, and authentication.
 
 from typing import Annotated
 
+from arq.connections import ArqRedis
 from fastapi import Cookie, Depends, Request, WebSocket
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +23,14 @@ async def get_redis(request: Request) -> RedisClient:
 
 
 Redis = Annotated[RedisClient, Depends(get_redis)]
+
+
+async def get_arq_pool(request: Request) -> ArqRedis:
+    """Get the ARQ producer pool from lifespan state."""
+    return request.state.arq_pool  # type: ignore[no-any-return]
+
+
+ArqPool = Annotated[ArqRedis, Depends(get_arq_pool)]
 
 # === Service Dependencies ===
 

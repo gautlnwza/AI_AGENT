@@ -34,6 +34,28 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: my_project_backend:dev
+    container_name: my_project_worker
+    volumes:
+      - ./backend/app:/app/app:ro
+    env_file:
+      - ./backend/.env
+    environment:
+      - ENVIRONMENT=local
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+    command: arq app.workers.settings.WorkerSettings
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     container_name: my_project_db
