@@ -65,6 +65,28 @@ FileUploadSvc = Annotated[
     FileUploadService, Depends(get_file_upload_service)
 ]  # === Authentication Dependencies ===
 
+from app.services.conversation import ConversationService
+
+
+def get_conversation_service(db: DBSession) -> ConversationService:
+    """Create ConversationService with the request database session."""
+    return ConversationService(db)
+
+
+ConversationSvc = Annotated[ConversationService, Depends(get_conversation_service)]
+
+from app.services.user_slash_command import UserSlashCommandService
+
+
+def get_user_slash_command_service(db: DBSession) -> UserSlashCommandService:
+    """Create user slash-command service with the request database session."""
+    return UserSlashCommandService(db)
+
+
+UserSlashCommandSvc = Annotated[
+    UserSlashCommandService, Depends(get_user_slash_command_service)
+]
+
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.db.models.user import User, UserRole
 

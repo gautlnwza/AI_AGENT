@@ -53,9 +53,28 @@ configure:
 | `R2_BUCKET_NAME` | R2 bucket name |
 | `R2_ENDPOINT_URL` | Optional custom S3 endpoint; defaults to the Cloudflare R2 endpoint |
 | `R2_PUBLIC_URL` | Optional public/custom domain for direct object URLs |
+| `R2_BUCKET_VISIBILITY` | `private` or `public`; private uses presigned downloads |
+| `R2_PRESIGNED_URL_EXPIRE_SECONDS` | Lifetime of direct upload/download URLs; default `900` |
+| `R2_KEY_PREFIX` | Root prefix for objects; default `uploads` |
 
 The API continues to serve private R2 objects through the authenticated download
 endpoints. `R2_PUBLIC_URL` is optional and is not required for uploads/downloads.
+
+### File API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/v1/files/upload` | Upload through FastAPI and create metadata |
+| `POST /api/v1/files/presigned-upload` | Create a direct R2 PUT URL |
+| `POST /api/v1/files/presigned-upload/complete` | Register metadata after direct upload |
+| `GET /api/v1/files/{id}/download-url` | Create a direct download URL after ownership check |
+| `GET /api/v1/files/{id}/metadata` | Read database and object metadata |
+| `DELETE /api/v1/files/{id}` | Delete object and database metadata |
+| `POST /api/v1/files/cleanup-orphans` | Admin-only cleanup of old unreferenced R2 objects |
+
+Object keys use a collision-resistant structure such as
+`uploads/{user_id}/{random}_{safe_filename}`. Avatar objects use an
+`uploads/avatars/...` prefix and are excluded from chat-file orphan cleanup.
 ## Authentication
 
 ### JWT

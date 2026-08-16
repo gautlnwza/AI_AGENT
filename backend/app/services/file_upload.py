@@ -5,6 +5,7 @@ creation. Moves parsing helpers and file classification out of the route layer.
 """
 
 import logging
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -151,3 +152,14 @@ class FileUploadService:
             file_type=file_type,
             parsed_content=parsed_content,
         )
+
+    async def delete_chat_file(self, chat_file: ChatFile) -> None:
+        """Delete file metadata; storage deletion is handled by the caller."""
+        await chat_file_repo.delete(self.db, chat_file)
+
+    async def cleanup_orphaned_files(self, storage: Any, older_than_hours: int) -> int:
+        """Delete old R2 objects that are no longer referenced by ChatFile."""
+        referenced = await chat_file_repo.get_storage_paths(self.db)
+        prefix = getattr(storage, "key_prefix", "uploads")
+        cutoff = datetime.now(UTC) - timedelta(hours=older_than_hours)
+        return await storage.cleanup_orphans(referenced, f"{prefix}/", cutoff)

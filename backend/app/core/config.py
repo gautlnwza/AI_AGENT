@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     R2_BUCKET: str = ""
     R2_ENDPOINT_URL: str | None = None
     R2_PUBLIC_URL: str | None = None
+    R2_BUCKET_VISIBILITY: Literal["private", "public"] = "private"
+    R2_PRESIGNED_URL_EXPIRE_SECONDS: int = 900
+    R2_KEY_PREFIX: str = "uploads"
     # Soft per-org storage cap surfaced on /billing — not enforced yet (5 GB).
     STORAGE_SOFT_LIMIT_BYTES: int = 5 * 1024 * 1024 * 1024
     # === Logfire ===

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Button, Badge, Spinner } from "@/components/ui";
+import { Button, Badge, Spinner, buttonVariants } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { Send, Mic, MicOff, Paperclip, X, FileText } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -39,7 +40,6 @@ export function ChatInput({
   // caller wired a context — without one, commands have nothing to do.
   const [paletteIndex, setPaletteIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const showPalette = !!slashContext && message.startsWith("/") && !message.includes("\n");
@@ -190,12 +190,14 @@ export function ChatInput({
 
   // File upload to backend
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    // Clone the FileList before clearing the input. FileList can be live, so
+    // clearing `value` first may otherwise make it empty in some browsers.
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     e.target.value = "";
 
     const maxMb = parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB || "50", 10);
-    for (const file of Array.from(files)) {
+    for (const file of files) {
       if (file.size > maxMb * 1024 * 1024) {
         toast.error(`${file.name}: File too large. Maximum ${maxMb}MB.`);
         continue;
@@ -305,23 +307,26 @@ export function ChatInput({
           </Button>
 
           {/* File attachment */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled || isUploading}
-            className="h-9 w-9"
+          {/* Use a native label/input association so file selection also works
+              when the chat WebSocket is offline or reconnecting. */}
+          <label
+            htmlFor="chat-file-input"
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "icon" }),
+              "h-9 w-9",
+              isUploading && "pointer-events-none opacity-50",
+            )}
             title="Attach file"
+            aria-label="Attach file"
           >
             {isUploading ? (
               <Spinner className="text-muted-foreground h-4 w-4" />
             ) : (
               <Paperclip className="text-muted-foreground h-4 w-4" />
             )}
-          </Button>
+          </label>
           <input
-            ref={fileInputRef}
+            id="chat-file-input"
             type="file"
             onChange={handleFileSelect}
             accept="image/jpeg,image/png,image/gif,image/webp,.txt,.md,.csv,.json,.py,.js,.ts,.tsx,.html,.css,.yaml,.yml,.toml,.xml,.sql,.sh,.pdf,.docx"

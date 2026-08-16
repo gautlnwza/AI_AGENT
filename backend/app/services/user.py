@@ -238,7 +238,9 @@ class UserService:
                 await storage.delete(user.avatar_url)
 
         # Save new avatar
-        storage_path = await storage.save(f"avatars/{user_id}", filename, file_data)
+        storage_path = await storage.save(
+            f"avatars/{user_id}", filename, file_data, content_type
+        )
         return await self._repo(
             user_repo.update, db_user=user, update_data={"avatar_url": storage_path}
         )

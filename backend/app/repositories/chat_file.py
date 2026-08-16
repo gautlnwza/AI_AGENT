@@ -26,6 +26,12 @@ async def get_many(db: AsyncSession, file_ids: Iterable[UUID]) -> list[ChatFile]
     return list(result.scalars().all())
 
 
+async def get_storage_paths(db: AsyncSession) -> set[str]:
+    """Return all object keys referenced by the database."""
+    result = await db.execute(select(ChatFile.storage_path))
+    return set(result.scalars().all())
+
+
 async def link_to_message(db: AsyncSession, *, message_id: UUID, file_ids: Iterable[UUID]) -> None:
     """Link multiple chat files to a message by setting message_id on each."""
     from sqlalchemy import update as sql_update
@@ -34,6 +40,12 @@ async def link_to_message(db: AsyncSession, *, message_id: UUID, file_ids: Itera
     if not ids:
         return
     await db.execute(sql_update(ChatFile).where(ChatFile.id.in_(ids)).values(message_id=message_id))
+    await db.flush()
+
+
+async def delete(db: AsyncSession, chat_file: ChatFile) -> None:
+    """Delete a file metadata record."""
+    await db.delete(chat_file)
     await db.flush()
 
 

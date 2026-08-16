@@ -7,10 +7,12 @@ from app.api.routes.v1 import (
     admin_users,
     agent,
     auth,
+    conversations,
     files,
     health,
     items,
     jobs,
+    me_slash_commands,
     oauth,
     users,
 )
@@ -28,6 +30,10 @@ v1_router.include_router(users.router, prefix="/users", tags=["users"])
 v1_router.include_router(oauth.router, prefix="/oauth", tags=["oauth"])
 # File upload/download routes
 v1_router.include_router(files.router, tags=["files"])
+v1_router.include_router(conversations.router, tags=["conversations"])
+v1_router.include_router(
+    me_slash_commands.router, prefix="/me/slash-commands", tags=["slash-commands"]
+)
 # AI chat WebSocket + model listing
 v1_router.include_router(agent.router, tags=["agent"])
 # Admin: user management + impersonation

@@ -2,11 +2,16 @@
 
 import logging
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from pydantic_ai.messages import BinaryContent
 
 from app.agents.assistant import Deps, get_agent
 from app.core.config import settings
+from app.db.session import get_db_context
+from app.repositories import chat_file as chat_file_repo
+from app.services.file_storage import get_file_storage
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +21,45 @@ router = APIRouter()
 async def send_event(websocket: WebSocket, event_type: str, data: dict[str, Any]) -> None:
     """Send one frontend-compatible agent event."""
     await websocket.send_json({"type": event_type, "data": data})
+
+
+async def build_multimodal_input(message: str, file_ids: list[Any]) -> str | list[Any]:
+    """Load attached images/text and build a Gemini multimodal prompt."""
+    if not file_ids:
+        return message
+
+    valid_ids: list[UUID] = []
+    for file_id in file_ids:
+        try:
+            valid_ids.append(UUID(str(file_id)))
+        except (TypeError, ValueError):
+            logger.warning("Ignoring invalid attached file id: %s", file_id)
+
+    if not valid_ids:
+        return message
+
+    storage = get_file_storage()
+    image_parts: list[BinaryContent] = []
+    text_parts: list[str] = []
+    async with get_db_context() as db:
+        attached_files = await chat_file_repo.get_many(db, valid_ids)
+        for chat_file in attached_files:
+            try:
+                if chat_file.file_type == "image" or chat_file.mime_type.startswith("image/"):
+                    data = await storage.load(chat_file.storage_path)
+                    image_parts.append(
+                        BinaryContent(data=data, media_type=chat_file.mime_type)
+                    )
+                elif chat_file.parsed_content:
+                    text_parts.append(
+                        f"\n---\nAttached file: {chat_file.filename}\n"
+                        f"```\n{chat_file.parsed_content}\n```"
+                    )
+            except Exception:
+                logger.exception("Failed to load attached file %s", chat_file.id)
+
+    full_message = message + "".join(text_parts)
+    return [full_message, *image_parts] if image_parts else full_message
 
 
 @router.get("/agent/models")
@@ -39,7 +83,10 @@ async def agent_websocket(websocket: WebSocket) -> None:
         while True:
             payload = await websocket.receive_json()
             message = payload.get("message")
-            if not isinstance(message, str) or not message.strip():
+            file_ids = payload.get("file_ids") or []
+            if not isinstance(message, str):
+                message = ""
+            if not message.strip() and not file_ids:
                 await send_event(websocket, "error", {"message": "Empty message"})
                 continue
 
@@ -51,7 +98,7 @@ async def agent_websocket(websocket: WebSocket) -> None:
                     temperature=payload.get("temperature"),
                 )
                 output, _, _ = await assistant.run(
-                    message,
+                    await build_multimodal_input(message, file_ids),
                     history=history,
                     deps=Deps(),
                 )
