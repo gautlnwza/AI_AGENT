@@ -38,6 +38,24 @@ openssl rand -hex 32
 | `MODELS_CACHE_DIR` | `./models_cache` | Directory for cached ML models |
 | `MEDIA_DIR` | `./media` | Directory for uploaded files |
 | `MAX_UPLOAD_SIZE_MB` | `50` | Maximum file upload size in megabytes |
+
+### File storage (Cloudflare R2)
+
+Set `STORAGE_BACKEND=r2` to store uploads in Cloudflare R2. R2 is S3-compatible,
+so create an R2 API token with Object Read & Write permission for the bucket and
+configure:
+
+| Variable | Description |
+|----------|-------------|
+| `R2_ACCOUNT_ID` | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | R2 API token access key ID |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret |
+| `R2_BUCKET_NAME` | R2 bucket name |
+| `R2_ENDPOINT_URL` | Optional custom S3 endpoint; defaults to the Cloudflare R2 endpoint |
+| `R2_PUBLIC_URL` | Optional public/custom domain for direct object URLs |
+
+The API continues to serve private R2 objects through the authenticated download
+endpoints. `R2_PUBLIC_URL` is optional and is not required for uploads/downloads.
 ## Authentication
 
 ### JWT

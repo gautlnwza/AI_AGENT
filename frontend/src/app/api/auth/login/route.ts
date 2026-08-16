@@ -53,9 +53,18 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof BackendApiError) {
-      const detail = (error.data as { detail?: string })?.detail || "Login failed";
+      const errorData = error.data as {
+        detail?: string;
+        error?: { message?: string };
+      } | null;
+      const detail =
+        errorData?.detail || errorData?.error?.message || "Login failed";
       return NextResponse.json({ detail }, { status: error.status });
     }
-    return NextResponse.json({ detail: "Internal server error" }, { status: 500 });
+    console.error("Login proxy failed:", error);
+    return NextResponse.json(
+      { detail: "Authentication service is unavailable" },
+      { status: 503 },
+    );
   }
 }

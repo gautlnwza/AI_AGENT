@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.api.deps import CurrentUser, FileUploadSvc
 from app.core.exceptions import NotFoundError
@@ -75,8 +75,6 @@ async def download_file(
 
     storage = get_file_storage()
     file_path = storage.get_full_path(chat_file.storage_path)
-    if not file_path:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
 
     # FastAPI's ``FileResponse(filename=...)`` always uses ``attachment`` —
     # build the header manually so we can switch to ``inline`` for previews.
@@ -92,7 +90,13 @@ async def download_file(
         "X-Frame-Options": "SAMEORIGIN",
         "Content-Security-Policy": "frame-ancestors 'self'",
     }
-    return FileResponse(path=file_path, media_type=chat_file.mime_type, headers=headers)
+    if file_path:
+        return FileResponse(path=file_path, media_type=chat_file.mime_type, headers=headers)
+    try:
+        data = await storage.load(chat_file.storage_path)
+    except (FileNotFoundError, KeyError):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found") from None
+    return Response(content=data, media_type=chat_file.mime_type, headers=headers)
 
 
 @router.get("/{file_id}/info", response_model=FileInfo)

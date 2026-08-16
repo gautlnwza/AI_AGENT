@@ -4,7 +4,7 @@
 from typing import Any
 from uuid import UUID
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi_pagination import Page
 from app.api.deps import (
     CurrentAdmin,
@@ -78,9 +78,13 @@ async def get_avatar(user_id: UUID, user_service: UserSvc) -> Any:
         raise HTTPException(status_code=404, detail="No avatar set")
     storage = get_file_storage()
     file_path = storage.get_full_path(user.avatar_url)
-    if not file_path:
-        raise HTTPException(status_code=404, detail="Avatar file not found")
-    return FileResponse(path=file_path, media_type="image/jpeg")
+    if file_path:
+        return FileResponse(path=file_path, media_type="image/jpeg")
+    try:
+        data = await storage.load(user.avatar_url)
+    except (FileNotFoundError, KeyError):
+        raise HTTPException(status_code=404, detail="Avatar file not found") from None
+    return Response(content=data, media_type="image/jpeg")
 
 
 @router.get("", response_model=Page[UserRead])

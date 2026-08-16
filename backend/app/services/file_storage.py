@@ -8,7 +8,9 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
+from asyncio import to_thread
 from pathlib import Path
+from typing import Any
 
 from app.core.config import settings
 
@@ -135,7 +137,97 @@ class LocalFileStorage(BaseFileStorage):
         return file_path if file_path.exists() else None
 
 
+class R2FileStorage(BaseFileStorage):
+    """Store files in Cloudflare R2 through its S3-compatible API.
+
+    boto3 is intentionally created only when this backend is selected, so local
+    development does not require R2 credentials or make any network calls.
+    Blocking boto3 calls are executed in a worker thread because the app is async.
+    """
+
+    def __init__(
+        self,
+        *,
+        account_id: str,
+        access_key_id: str,
+        secret_access_key: str,
+        bucket_name: str,
+        endpoint_url: str | None = None,
+        public_url: str | None = None,
+    ) -> None:
+        if not all((account_id, access_key_id, secret_access_key, bucket_name)):
+            raise ValueError(
+                "R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, "
+                "and R2_BUCKET_NAME are required when STORAGE_BACKEND=r2"
+            )
+
+        import boto3
+
+        self.bucket_name = bucket_name
+        self.public_url = public_url.rstrip("/") if public_url else None
+        self.client = boto3.client(
+            "s3",
+            endpoint_url=endpoint_url or f"https://{account_id}.r2.cloudflarestorage.com",
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            region_name="auto",
+        )
+
+    async def save(self, user_id: str, filename: str, data: bytes) -> str:
+        """Upload file bytes and return the object key."""
+        key = f"{_sanitize_filename(user_id)}/{make_storage_filename(filename)}"
+        await to_thread(
+            self.client.put_object,
+            Bucket=self.bucket_name,
+            Key=key,
+            Body=data,
+        )
+        return key
+
+    async def load(self, storage_path: str) -> bytes:
+        """Download an object by key."""
+        try:
+            response: dict[str, Any] = await to_thread(
+                self.client.get_object,
+                Bucket=self.bucket_name,
+                Key=storage_path,
+            )
+        except Exception as exc:
+            error_code = getattr(exc, "response", {}).get("Error", {}).get("Code")
+            if error_code in {"404", "NoSuchKey", "NotFound"}:
+                raise FileNotFoundError(f"File not found: {storage_path}") from exc
+            raise
+        return await to_thread(response["Body"].read)
+
+    async def delete(self, storage_path: str) -> None:
+        """Delete an object by key."""
+        await to_thread(
+            self.client.delete_object,
+            Bucket=self.bucket_name,
+            Key=storage_path,
+        )
+
+    def get_full_path(self, storage_path: str) -> Path | None:
+        """Return no filesystem path; R2 objects are served through the API."""
+        return None
+
+    def get_public_url(self, storage_path: str) -> str | None:
+        """Return a public URL when an R2 custom/public domain is configured."""
+        if not self.public_url:
+            return None
+        return f"{self.public_url}/{storage_path.lstrip('/')}"
+
+
 def get_file_storage() -> BaseFileStorage:
     """Factory: create file storage backend based on settings."""
+    if settings.STORAGE_BACKEND == "r2":
+        return R2FileStorage(
+            account_id=settings.R2_ACCOUNT_ID,
+            access_key_id=settings.R2_ACCESS_KEY_ID,
+            secret_access_key=settings.R2_SECRET_ACCESS_KEY,
+            bucket_name=settings.R2_BUCKET_NAME or settings.R2_BUCKET,
+            endpoint_url=settings.R2_ENDPOINT_URL,
+            public_url=settings.R2_PUBLIC_URL,
+        )
     media_dir = getattr(settings, "MEDIA_DIR", "media")
     return LocalFileStorage(base_dir=media_dir)

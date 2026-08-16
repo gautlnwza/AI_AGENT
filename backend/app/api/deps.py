@@ -25,6 +25,16 @@ async def get_redis(request: Request) -> RedisClient:
 Redis = Annotated[RedisClient, Depends(get_redis)]
 
 
+async def invalidate_user_cache(redis: RedisClient, user_id: object) -> None:
+    """Invalidate the cached user record after a user mutation.
+
+    Cache invalidation is best-effort: the request should not fail merely
+    because a stale cache key is absent. The key format is shared with the
+    user service cache helpers.
+    """
+    await redis.delete(f"user:{user_id}")
+
+
 async def get_arq_pool(request: Request) -> ArqRedis:
     """Get the ARQ producer pool from lifespan state."""
     return request.state.arq_pool  # type: ignore[no-any-return]

@@ -36,6 +36,15 @@ class Settings(BaseSettings):
     MODELS_CACHE_DIR: Path = Path("./models_cache")
     MEDIA_DIR: Path = Path("./media")
     MAX_UPLOAD_SIZE_MB: int = 50  # Max file upload size in MB
+    STORAGE_BACKEND: Literal["local", "r2"] = "local"
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = ""
+    # Backward-compatible alias for existing deployments using R2_BUCKET.
+    R2_BUCKET: str = ""
+    R2_ENDPOINT_URL: str | None = None
+    R2_PUBLIC_URL: str | None = None
     # Soft per-org storage cap surfaced on /billing — not enforced yet (5 GB).
     STORAGE_SOFT_LIMIT_BYTES: int = 5 * 1024 * 1024 * 1024
     # === Logfire ===
