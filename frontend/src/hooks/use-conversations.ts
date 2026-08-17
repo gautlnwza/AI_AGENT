@@ -37,6 +37,7 @@ export function useConversations() {
   } = useConversationStore();
   const { clearMessages } = useChatStore();
   const hasMoreRef = useRef(true);
+  const selectionRequestRef = useRef(0);
   const PAGE_SIZE = 30;
 
   const fetchConversations = useCallback(async () => {
@@ -63,6 +64,9 @@ export function useConversations() {
         } catch {
           // Not accessible (deleted, no permission) — clear the stale id
           setCurrentConversationId(null);
+          const url = new URL(window.location.href);
+          url.searchParams.delete("id");
+          window.history.replaceState({}, "", url.toString());
         }
       }
     } catch (err) {
@@ -130,6 +134,7 @@ export function useConversations() {
 
   const selectConversation = useCallback(
     async (id: string) => {
+      const requestId = ++selectionRequestRef.current;
       setCurrentConversationId(id);
       clearMessages();
       const url = new URL(window.location.href);
@@ -139,12 +144,17 @@ export function useConversations() {
       setError(null);
       try {
         const response = await apiClient.get<MessagesResponse>(`/conversations/${id}/messages`);
-        setCurrentMessages(response.items);
+        if (requestId === selectionRequestRef.current) {
+          setCurrentMessages(response.items);
+        }
       } catch (err) {
+        if (requestId !== selectionRequestRef.current) return;
         const message = err instanceof Error ? err.message : "Failed to fetch messages";
         setError(message);
       } finally {
-        setLoading(false);
+        if (requestId === selectionRequestRef.current) {
+          setLoading(false);
+        }
       }
     },
     [setCurrentConversationId, clearMessages, setCurrentMessages, setLoading, setError],
@@ -185,6 +195,14 @@ export function useConversations() {
       try {
         await apiClient.delete(`/conversations/${id}`);
         removeConversation(id);
+        if (useConversationStore.getState().currentConversationId === null) {
+          selectionRequestRef.current += 1;
+          clearMessages();
+          setCurrentMessages([]);
+          const url = new URL(window.location.href);
+          url.searchParams.delete("id");
+          window.history.replaceState({}, "", url.toString());
+        }
         toast.success("Conversation deleted");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to delete conversation";
@@ -192,7 +210,7 @@ export function useConversations() {
         toast.error(message);
       }
     },
-    [removeConversation, setError],
+    [removeConversation, setError, clearMessages, setCurrentMessages],
   );
 
   const renameConversation = useCallback(
@@ -224,15 +242,7 @@ export function useConversations() {
   );
 
   const startNewChat = useCallback(async () => {
-    // If current conversation is empty (no messages), just reuse it
-    const currentId = useConversationStore.getState().currentConversationId;
-    if (currentId) {
-      const msgs = useConversationStore.getState().currentMessages;
-      if (msgs.length === 0) {
-        clearMessages();
-        return;
-      }
-    }
+    selectionRequestRef.current += 1;
     clearMessages();
     setCurrentMessages([]);
     setCurrentConversationId(null);

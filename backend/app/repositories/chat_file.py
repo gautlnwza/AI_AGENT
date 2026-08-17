@@ -26,6 +26,19 @@ async def get_many(db: AsyncSession, file_ids: Iterable[UUID]) -> list[ChatFile]
     return list(result.scalars().all())
 
 
+async def get_many_owned(
+    db: AsyncSession, file_ids: Iterable[UUID], user_id: UUID
+) -> list[ChatFile]:
+    """Batch-load files owned by a user."""
+    ids = list(file_ids)
+    if not ids:
+        return []
+    result = await db.execute(
+        select(ChatFile).where(ChatFile.id.in_(ids), ChatFile.user_id == user_id)
+    )
+    return list(result.scalars().all())
+
+
 async def get_storage_paths(db: AsyncSession) -> set[str]:
     """Return all object keys referenced by the database."""
     result = await db.execute(select(ChatFile.storage_path))
@@ -41,6 +54,21 @@ async def link_to_message(db: AsyncSession, *, message_id: UUID, file_ids: Itera
         return
     await db.execute(sql_update(ChatFile).where(ChatFile.id.in_(ids)).values(message_id=message_id))
     await db.flush()
+
+
+async def list_for_messages(
+    db: AsyncSession, message_ids: Iterable[UUID]
+) -> list[ChatFile]:
+    """Return attachment metadata for a collection of messages."""
+    ids = list(message_ids)
+    if not ids:
+        return []
+    result = await db.execute(
+        select(ChatFile)
+        .where(ChatFile.message_id.in_(ids))
+        .order_by(ChatFile.created_at.asc())
+    )
+    return list(result.scalars().all())
 
 
 async def delete(db: AsyncSession, chat_file: ChatFile) -> None:

@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
+from app.repositories import chat_file as chat_file_repo
 from app.repositories import conversation as conversation_repo
 from app.schemas.conversation import ConversationCreate, ConversationUpdate
 
@@ -41,4 +42,57 @@ class ConversationService:
 
     async def messages(self, conversation_id: UUID, user_id: UUID):
         await self.get_owned(conversation_id, user_id)
+        messages = list(await conversation_repo.list_messages(self.db, conversation_id))
+        files = await chat_file_repo.list_for_messages(
+            self.db, [message.id for message in messages]
+        )
+        files_by_message: dict[UUID, list[dict[str, object]]] = {}
+        for chat_file in files:
+            if chat_file.message_id is None:
+                continue
+            files_by_message.setdefault(chat_file.message_id, []).append(
+                {
+                    "id": chat_file.id,
+                    "filename": chat_file.filename,
+                    "mime_type": chat_file.mime_type,
+                    "file_type": chat_file.file_type,
+                }
+            )
+        return [
+            {
+                "id": message.id,
+                "conversation_id": message.conversation_id,
+                "role": message.role,
+                "content": message.content,
+                "model_name": message.model_name,
+                "created_at": message.created_at,
+                "updated_at": message.updated_at,
+                "files": files_by_message.get(message.id, []),
+            }
+            for message in messages
+        ]
+
+    async def message_history(self, conversation_id: UUID, user_id: UUID):
+        """Return persisted messages after verifying ownership."""
+        await self.get_owned(conversation_id, user_id)
         return await conversation_repo.list_messages(self.db, conversation_id)
+
+    async def add_message(
+        self,
+        conversation_id: UUID,
+        user_id: UUID,
+        *,
+        role: str,
+        content: str,
+        model_name: str | None = None,
+    ):
+        conversation = await self.get_owned(conversation_id, user_id)
+        message = await conversation_repo.create_message(
+            self.db,
+            conversation_id,
+            role,
+            content,
+            model_name,
+        )
+        await conversation_repo.touch(self.db, conversation)
+        return message

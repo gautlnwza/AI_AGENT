@@ -31,6 +31,13 @@ class ConversationList(BaseSchema):
     total: int
 
 
+class MessageFileRead(BaseSchema):
+    id: UUID
+    filename: str
+    mime_type: str
+    file_type: str
+
+
 class MessageRead(BaseSchema):
     id: UUID
     conversation_id: UUID
@@ -39,6 +46,7 @@ class MessageRead(BaseSchema):
     model_name: str | None
     created_at: datetime
     updated_at: datetime | None
+    files: list[MessageFileRead] = Field(default_factory=list)
 
 
 class MessageList(BaseSchema):

@@ -3,17 +3,19 @@
 Uses anyio for async testing instead of pytest-asyncio.
 This allows using the same async primitives that Starlette uses internally.
 See: https://anyio.readthedocs.io/en/stable/testing.html
-"""# ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
-from collections.abc import AsyncGeneratorfrom 
-unittest.mock 
-import AsyncMock, MagicMock
+"""
+
+from collections.abc import AsyncGenerator
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import appfrom app.api.deps 
-import get_redis
-from app.clients.redis import RedisClientfrom app.api.deps 
-import get_db_session
+from app.api.deps import get_redis
+from app.clients.redis import RedisClient
+from app.db.session import get_db_session
+from app.main import app
+
 
 @pytest.fixture
 def anyio_backend() -> str:
@@ -22,6 +24,7 @@ def anyio_backend() -> str:
     Options: "asyncio" or "trio". We use asyncio since that's what uvicorn uses.
     """
     return "asyncio"
+
 
 @pytest.fixture
 def mock_redis() -> MagicMock:
@@ -36,6 +39,7 @@ def mock_redis() -> MagicMock:
     mock.expire = AsyncMock(return_value=True)
     return mock
 
+
 @pytest.fixture
 async def mock_db_session() -> AsyncGenerator[AsyncMock, None]:
     """Create a mock database session for testing."""
@@ -46,14 +50,20 @@ async def mock_db_session() -> AsyncGenerator[AsyncMock, None]:
     mock.close = AsyncMock()
     yield mock
 
+
 @pytest.fixture
-async def client(    mock_redis: MagicMock,    mock_db_session,) -> AsyncGenerator[AsyncClient, None]:
+async def client(
+    mock_redis: MagicMock,
+    mock_db_session: AsyncMock,
+) -> AsyncGenerator[AsyncClient, None]:
     """Async HTTP client for testing.
 
     Uses HTTPX AsyncClient with ASGITransport instead of Starlette's TestClient.
     This allows proper async testing without thread pool overhead.
     """
-    # Override dependencies for testing    app.dependency_overrides[get_redis] = lambda: mock_redis    app.dependency_overrides[get_db_session] = lambda: mock_db_session
+    # Override dependencies for testing
+    app.dependency_overrides[get_redis] = lambda: mock_redis
+    app.dependency_overrides[get_db_session] = lambda: mock_db_session
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -61,6 +71,9 @@ async def client(    mock_redis: MagicMock,    mock_db_session,) -> AsyncGenerat
         yield ac
 
     # Clear overrides after test
-    app.dependency_overrides.clear()# Note: For integration tests requiring authenticated users,
+    app.dependency_overrides.clear()
+
+
+# Note: For integration tests requiring authenticated users,
 # use dependency overrides with mock users instead of test_user fixture.
 # See tests/api/test_auth.py and tests/api/test_users.py for examples.

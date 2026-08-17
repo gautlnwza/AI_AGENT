@@ -24,6 +24,14 @@ export interface ConversationMessage {
   tool_calls?: ConversationToolCall[];
   user_rating?: UserRating;
   rating_count?: { likes: number; dislikes: number } | null;
+  files: ConversationMessageFile[];
+}
+
+export interface ConversationMessageFile {
+  id: string;
+  filename: string;
+  mime_type: string;
+  file_type: string;
 }
 
 export interface ConversationToolCall {

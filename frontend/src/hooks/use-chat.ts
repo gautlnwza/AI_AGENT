@@ -2,13 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import { useWebSocket } from "./use-websocket";import { useChatStore, useAuthStore } from "@/stores";import type {
-  ChatMessageFile,
-  Decision,
-  PendingApproval,
-  ToolCall,
-  WSEvent,
-} from "@/types";
+import { useWebSocket } from "./use-websocket";
+import { useChatStore, useAuthStore } from "@/stores";
+import type { ChatMessageFile, Decision, PendingApproval, ToolCall, WSEvent } from "@/types";
 import { WS_URL } from "@/lib/constants";
 import { useConversationStore } from "@/stores";
 /** A message the user typed while the agent was busy / socket offline.
@@ -23,10 +19,11 @@ export interface QueuedMessage {
 interface UseChatOptions {
   conversationId?: string | null;
   onConversationCreated?: (conversationId: string) => void;
+  onConversationUpdated?: (conversationId: string) => void;
 }
 
 export function useChat(options: UseChatOptions = {}) {
-  const { conversationId, onConversationCreated } = options;
+  const { conversationId, onConversationCreated, onConversationUpdated } = options;
   const { setCurrentConversationId, currentConversationId: currentConversationIdFromStore } =
     useConversationStore();
   const {
@@ -417,6 +414,12 @@ export function useChat(options: UseChatOptions = {}) {
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("billing:refresh"));
           }
+          const completedConversationId = (
+            wsEvent.data as { conversation_id?: string | null } | undefined
+          )?.conversation_id;
+          if (completedConversationId) {
+            onConversationUpdated?.(completedConversationId);
+          }
           break;
         }
       }
@@ -434,6 +437,7 @@ export function useChat(options: UseChatOptions = {}) {
       setCurrentConversationId,
       setCurrentMessageId,
       onConversationCreated,
+      onConversationUpdated,
       currentConversationIdFromStore,
       conversationId,
     ],
@@ -458,24 +462,27 @@ export function useChat(options: UseChatOptions = {}) {
 
   const doSend = useCallback(
     (content: string, fileIds?: string[], files?: ChatMessageFile[]) => {
+      const effectiveConversationId =
+        useConversationStore.getState().currentConversationId || conversationId || null;
       addMessage({
         id: nanoid(),
         role: "user",
         content,
         timestamp: new Date(),
-        conversationId: conversationId || undefined,
+        conversationId: effectiveConversationId || undefined,
         fileIds,
         files,
       });
       setIsProcessing(true);
       const payload: Record<string, unknown> = {
         message: content,
-        conversation_id: conversationId || null,
+        conversation_id: effectiveConversationId,
       };
       if (fileIds?.length) payload.file_ids = fileIds;
       if (modelRef.current) payload.model = modelRef.current;
       if (temperatureRef.current !== null) payload.temperature = temperatureRef.current;
-      if (thinkingEffortRef.current !== null) payload.thinking_effort = thinkingEffortRef.current;      sendMessage(payload);
+      if (thinkingEffortRef.current !== null) payload.thinking_effort = thinkingEffortRef.current;
+      sendMessage(payload);
     },
     [addMessage, sendMessage, conversationId],
   );

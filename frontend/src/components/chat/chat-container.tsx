@@ -11,7 +11,8 @@ import { PendingMessages } from "./pending-messages";
 import { ToolApprovalDialog } from "./tool-approval-dialog";
 import type { PendingApproval, Decision } from "@/types";
 import { useConversationStore, useChatStore } from "@/stores";
-import { useConversations } from "@/hooks";import { useSlashCommands } from "@/hooks";
+import { useConversations } from "@/hooks";
+import { useSlashCommands } from "@/hooks";
 export function ChatContainer() {
   return <AuthenticatedChatContainer />;
 }
@@ -27,6 +28,10 @@ function AuthenticatedChatContainer() {
   const prevConversationIdRef = useRef<string | null | undefined>(undefined);
 
   const handleConversationCreated = useCallback(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  const handleConversationUpdated = useCallback(() => {
     fetchConversations();
   }, [fetchConversations]);
 
@@ -49,6 +54,7 @@ function AuthenticatedChatContainer() {
   } = useChat({
     conversationId: currentConversationId,
     onConversationCreated: handleConversationCreated,
+    onConversationUpdated: handleConversationUpdated,
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -96,10 +102,7 @@ function AuthenticatedChatContainer() {
           args: tc.args,
           result: tc.result,
           status: (tc.status === "failed" ? "error" : tc.status) as
-            | "pending"
-            | "running"
-            | "completed"
-            | "error",
+            "pending" | "running" | "completed" | "error",
         }));
         // Reconstruct an ordered timeline for assistant turns. The DB has no
         // interleaving metadata, so we use the realistic order: tools ran
@@ -133,24 +136,8 @@ function AuthenticatedChatContainer() {
           parts,
           user_rating: msg.user_rating ?? undefined,
           rating_count: msg.rating_count ?? undefined,
-          files:
-            "files" in msg &&
-            Array.isArray((msg as unknown as { files?: { id: string; filename: string }[] }).files)
-              ? (
-                  msg as unknown as {
-                    files: {
-                      id: string;
-                      filename: string;
-                      mime_type: string;
-                      file_type: string;
-                    }[];
-                  }
-                ).files
-              : undefined,
-          fileIds:
-            "files" in msg && Array.isArray((msg as unknown as { files?: unknown[] }).files)
-              ? (msg as unknown as { files: { id: string }[] }).files.map((f) => f.id)
-              : undefined,
+          files: msg.files,
+          fileIds: msg.files.map((file) => file.id),
         });
       });
     }
@@ -170,7 +157,8 @@ function AuthenticatedChatContainer() {
     if (isNearBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);  const { commands: slashCommands } = useSlashCommands();
+  }, [messages]);
+  const { commands: slashCommands } = useSlashCommands();
   const handleRegenerate = useCallback(
     (assistantMessageId: string) => {
       const idx = messages.findIndex((m) => m.id === assistantMessageId);
@@ -220,7 +208,9 @@ function AuthenticatedChatContainer() {
       onTemperatureChange={setTemperature}
       onThinkingEffortChange={setThinkingEffort}
       onRegenerate={handleRegenerate}
-      slashContext={slashContext}      slashCommands={slashCommands}      queuedMessages={queuedMessages}
+      slashContext={slashContext}
+      slashCommands={slashCommands}
+      queuedMessages={queuedMessages}
       onCancelQueued={cancelQueued}
       messagesEndRef={messagesEndRef}
       scrollContainerRef={scrollContainerRef}

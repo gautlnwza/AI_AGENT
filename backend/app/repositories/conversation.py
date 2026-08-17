@@ -1,6 +1,7 @@
 """Conversation and message data access."""
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import delete as sql_delete
@@ -69,6 +70,12 @@ async def create_message(
     await db.flush()
     await db.refresh(message)
     return message
+
+
+async def touch(db: AsyncSession, conversation: Conversation) -> None:
+    """Move a conversation to the top of history after a new turn."""
+    conversation.updated_at = datetime.now(UTC)
+    await db.flush()
 
 
 async def delete(db: AsyncSession, conversation: Conversation) -> None:
